@@ -1,0 +1,91 @@
+# Site settings
+title: Ufowoqqqo
+SEOTitle: Ufowoqqqo
+header-img: img/bg2.png
+email: 1085973120@qq.com
+description: ""
+keyword: ""
+url: "https://Kaibin-Lu.github.io/"              # your host, for absolute URL
+baseurl: ""         # for example, '/blog' if your blog hosted on 'host/blog'
+
+# MathJax
+mathjax: true
+
+# SNS settings
+RSS: false
+#weibo_username:     2762281595
+#zhihu_username:     Kaibin-Lu
+github_username:    Kaibin-Lu
+#twitter_username:   Kaibin-Lu
+#facebook_username:  Kaibin-Lu
+
+
+
+# Build settings
+highlighter: rouge
+permalink: pretty
+paginate: 10
+exclude: ["less","node_modules","Gruntfile.js","package.json","README.md"]
+anchorjs: true                          # if you want to customize anchor. check out line:181 of `post.html`
+
+# Markdown settings
+# replace redcarpet to kramdown,
+# although redcarpet can auto highlight code, the lack of header-id make the catalog impossible, so I switch to kramdown
+# document: http://jekyllrb.com/docs/configuration/#kramdown
+markdown: kramdown
+kramdown:
+  input: GFM                            # use Github Flavored Markdown !important
+  syntax_highlighter: rouge
+
+# Sidebar settings
+sidebar: true                           # whether or not using Sidebar.
+sidebar-about-description: "一入OI深似海，从此智商是路人"
+sidebar-avatar: /img/avatar-lkb.jpg      # use absolute URL, seeing it's used in both `/` and `/about/`
+
+# Featured Tags
+featured-tags: false                     # whether or not using Feature-Tags
+featured-condition-size: 1              # A tag will be featured if the size of it is more than this condition value
+
+# Friends
+friends: [
+    {
+        title: "旧站",
+        href: "http://blog.csdn.net/u013686535"
+    },
+    {
+        title: "redbag",
+        href: "http://redbag.pw"
+    },
+    {
+        title: "YKgsmUDq",
+        href: "http://ykgsmudq.com"
+    },
+    {
+        title: "danihao123",
+        href: "http://danihao123.is-programmer.com"
+    },
+    {
+        title: "羊毛羊",
+        href: "http://www.cnblogs.com/y-m-y"
+    },
+    {
+        title: "Ghastlcon",
+        href: "https://Ghastlcon.github.io"
+    },
+    {
+        title: "Monad",
+        href: "https://YanWQ-Monad.github.io"
+    },
+    {
+        title: "wyy",
+        href: "http://www.cnblogs.com/littlewyy"
+    },
+    {
+        title: "zqy",
+        href: "http://www.cnblogs.com/yiyiyizqy"
+    },
+    {
+        title: "aspe",
+        href: "http://yhf4aspe.blog.163.com"
+    }
+]
