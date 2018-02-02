@@ -45,24 +45,88 @@ layout: default
             col-md-10 col-md-offset-1
             post-container">
 
-				{{ content }}
+                
+
+            <blockquote>
+                <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-stack-1x fa-inverse fontawesome-text">CC</i>
+                </span>
+                采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" target="_blank">CC BY-NC-SA 4.0</a> 许可，转载请注明：“转自 <a href="{{ site.url }}{{ page.url }}">{{ page.title }}</a> ”<br>
+            </blockquote>
+            
+                {{ content }}
+                
+             <!--
+             <blockquote>
+                <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-qq fa-stack-1x fa-inverse"></i>
+                </span>
+                欢迎各路神犇与本蒟蒻<a href=tencent://message/?uin=2638167136>讨论</a>
+            </blockquote>
+            -->
 
             <hr>
 
             <ul class="pager">
                 {% if page.previous.url %}
-                <li class="previous">
-                    <a href="{{ page.previous.url | prepend: site.baseurl | replace: '//', '/' }}" data-toggle="tooltip" data-placement="top" title="{{page.previous.title}}">&larr; Previous Post</a>
-                </li>
+                    <li class="previous">
+                        <a href="{{ page.previous.url | prepend: site.baseurl | replace: '//', '/' }}" data-toggle="tooltip" data-placement="top" title="{{page.previous.title}}">&larr; Previous Post</a>
+                    </li>
                 {% endif %}
+
                 {% if page.next.url %}
-                <li class="next">
-                    <a href="{{ page.next.url | prepend: site.baseurl | replace: '//', '/' }}" data-toggle="tooltip" data-placement="top" title="{{page.next.title}}">Next Post &rarr;</a>
-                </li>
+                    <li class="next">
+                        <a href="{{ page.next.url | prepend: site.baseurl | replace: '//', '/' }}" data-toggle="tooltip" data-placement="top" title="{{page.next.title}}">Next Post &rarr;</a>
+                    </li>
                 {% endif %}
             </ul>
 
+            {% if page.comments %}
+                <hr>
+                <blockquote>
+                    如果本文帮助到了你，希望你能撰写 $1$ 条评论，非常感谢 $\text{w}$
+                </blockquote>
+
+                <!-- 来必力City版安装代码 -->
+                <div id="lv-container" data-id="city" data-uid="MTAyMC8zMjI2OS84ODMz">
+                    <script type="text/javascript">
+                   (function(d, s) {
+                       var j, e = d.getElementsByTagName(s)[0];
+
+                       if (typeof LivereTower === 'function') { return; }
+
+                       j = d.createElement(s);
+                       j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+                       j.async = true;
+
+                       e.parentNode.insertBefore(j, e);
+                   })(document, 'script');
+                    </script>
+                <noscript> 为正常使用评论功能，请激活 JavaScript</noscript>
+                </div>
+                <!-- City版安装代码已完成 -->
+            
+            {% endif %}
+
         </div>
+<!-- Side Catalog Container -->
+    {% if page.catalog %}
+        <div class="
+            col-lg-2 col-lg-offset-0
+            visible-lg-block
+            sidebar-container
+            catalog-container">
+            <div class="side-catalog">
+                <hr class="hidden-sm hidden-xs">
+                <h5>
+                    <a class="catalog-toggle" href="#">CATALOG</a>
+                </h5>
+                <ul class="catalog-body"></ul>
+            </div>
+        </div>
+    {% endif %}
 
 <!-- Sidebar Container -->
         <div class="
@@ -76,14 +140,14 @@ layout: default
                 <hr class="hidden-sm hidden-xs">
                 <h5><a href="/tags/">FEATURED TAGS</a></h5>
                 <div class="tags">
-    				{% for tag in site.tags %}
-                        {% if tag[1].size > {{site.featured-condition-size}} %}
-            				<a href="{{ site.baseurl }}/tags/#{{ tag[0] }}" title="{{ tag[0] }}" rel="{{ tag[1].size }}">
+                    {% for tag in site.tags %}
+                        {% if tag[1].size > site.featured-condition-size %}
+                            <a href="{{ site.baseurl }}/tags/#{{ tag[0] }}" title="{{ tag[0] }}" rel="{{ tag[1].size }}">
                                 {{ tag[0] }}
                             </a>
                         {% endif %}
-    				{% endfor %}
-    			</div>
+                    {% endfor %}
+                </div>
             </section>
             {% endif %}
 
