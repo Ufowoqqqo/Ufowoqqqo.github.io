@@ -221,6 +221,7 @@ $(function() {
         var that = $(this);
         that.closest('a').attr('data-toggle', 'lightbox').attr('rel', 'lightbox').attr('data-title', that.attr('alt'));
     });
+
     $(document).delegate('*[data-toggle="lightbox"]', 'click', function(e) {
         e.preventDefault();
         $(this).ekkoLightbox();
@@ -230,6 +231,7 @@ $(function() {
 
 <!-- Code folding -->
 <script type="text/javascript">
+
 $(function() {
     $('div.highlighter-rouge').each(function(index, value) {
         var sb   = value.getElementsByTagName('div')[0].getElementsByTagName('pre')[0].getElementsByTagName('code')[0].getElementsByTagName('span')[0];
@@ -251,11 +253,13 @@ $(function() {
         details.appendChild(summary);
     });
 })
+
 </script>
 
 <!-- Picture figure -->
 <script type="text/javascript">
 $('img').closest('a').wrap('<figure></figure>');
+
 $(function() {
     $('figure').each(function() {
         var that = $(this)[0];

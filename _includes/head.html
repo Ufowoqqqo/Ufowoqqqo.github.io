@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ site.description }}">
     <meta name="keyword"  content="{{ site.keyword }}">
-    <link rel="shortcut icon" href="{{ site.baseurl }}/img/kb_favicon.ico">
+    <link rel="shortcut icon" href="{{ site.baseurl }}/img/favicon.ico">
 
     <title>{% if page.title %}{{ page.title }} - {{ site.SEOTitle }}{% else %}{{ site.SEOTitle }}{% endif %}</title>
 
@@ -18,12 +18,20 @@
     <link rel="stylesheet" href="{{ "/css/hux-blog.min.css" | prepend: site.baseurl }}">
 
     <!-- Pygments Github CSS -->
-    <link rel="stylesheet" href="{{ "/css/syntax.css" | prepend: site.baseurl }}">
+    <link rel="stylesheet" href="{{ "/css/syntax.min.css" | prepend: site.baseurl }}">
 
-    <!-- Custom Fonts -->
+    <!-- LightBox -->
+    <link rel="stylesheet" href="https://cdn.bootcss.com/lightbox2/2.9.0/css/lightbox.min.css">
+
+    <!-- hreflang -->
+    <link rel="alternate" href="{{ "/" | prepend: site.baseurl }}" hreflang="zh-Hans"/>
+
+    <!-- Custom Fonts font-awesome -->
     <!-- <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
     <!-- Hux change font-awesome CDN to qiniu -->
-    <link href="https://cdn.staticfile.org/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link type="text/css" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!--<link rel="stylesheet" href="{{ "/css/font-awesome.min.css" | prepend: site.baseurl }}">-->
+
 
 
     <!-- Hux Delete, sad but pending in China
@@ -41,5 +49,20 @@
     <![endif]-->
 
     <!-- ga & ba script hoook -->
+    {% if site.ga_track_id %}
+    {% if site.inserver %}
+    <script>
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+        ga('create', '{{site.ga_track_id}}', 'auto');
+        ga('send', 'pageview');
+
+    </script>
+    {% endif %}
+    {% endif %}
+
     <script></script>
 </head>
