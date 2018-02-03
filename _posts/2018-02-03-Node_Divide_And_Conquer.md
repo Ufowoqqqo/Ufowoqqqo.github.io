@@ -6,6 +6,7 @@ date:       2018-02-03 10:00:00
 author:     "Ufowoqqqo"
 header-img: "img/solution_bg.png"
 mathjax:    true
+catalog:    true
 tags:
     - 算法笔记
     - 点分治
