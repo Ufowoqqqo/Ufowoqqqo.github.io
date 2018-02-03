@@ -7,7 +7,7 @@ author:     "Ufowoqqqo"
 header-img: "img/solution_bg.png"
 mathjax:    true
 tags:
-	- 算法笔记
+    - 算法笔记
     - 点分治
 ---
 
