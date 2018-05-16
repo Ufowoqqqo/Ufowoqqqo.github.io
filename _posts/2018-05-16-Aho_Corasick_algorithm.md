@@ -42,7 +42,7 @@ $\text{kmp}$ 算法通过对模式串进行分析，得到 $next$ 数组，其�
 
 由于篇幅限制，这里不再展开阐述，更进一步的解析参见[这里](https://blog.monad.ga/2018/02/12/Trie/)。
 
-###$\text{Fail Pointer}$
+### $\text{Fail Pointer}$
 
 将 $\text{kmp}$ 的思想放到 $\text{Trie}$ 上，就得到了 $\text{AC}$ 自动机。
 
