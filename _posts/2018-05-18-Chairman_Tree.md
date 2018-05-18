@@ -4,7 +4,7 @@ title:      "可持久化线段树入门学习笔记"
 subtitle:   "观海听涛"
 date:       2018-05-18 11:00:00
 author:     "Ufowoqqqo"
-header-img: "http://image.bubuko.com/info/201607/20180110200713319492.png"
+header-img: "img/hjt.jpg"
 mathjax:    true
 catalog:    true
 tags:
