@@ -20,7 +20,7 @@ $\text{AC}$ 自动机是一种多模匹配算法，即用于解决多个模式�
 #### $\text{kmp}$
 $\text{kmp}$ 算法通过对模式串进行分析，得到 $next$ 数组，其中 $next_i = j$ 表示模式串中满足 $s_{[0,j-1]} = s_{[i - j + 1,i]}$ 的**次大**的 $j$（即排除了 $j=i+1$，后缀不能与前缀重合，否则没有意义）。如下图：
 
-![](https://blog.monad.ga/img/post/KMP/Prefix.svg)
+![](https://blog.monad.ga/img/post/KMP/Prefix.png)
 
 当模式串与文本串在某一位置失配时，朴素的做法是将模式串整体右移一位，并再次从头开始匹配，不难发现这样做了许多无用功。由上图可以知道，在已匹配的 `ABCDAB` 中，有长度相等且完全相同的前缀 `AB` 与后缀，而要使前 `AB` 与后 `AB` 重合，显然应该移动 $4$ 位，而且移动更少的位数是不可能匹配的。
 
@@ -34,7 +34,7 @@ $\text{kmp}$ 算法通过对模式串进行分析，得到 $next$ 数组，其�
 
 又被称为字典树，主要特点是利用多个字符串的公共前缀来节省空间。如下图：
 
-![](https://blog.monad.ga/img/post/Trie/Trie_tree_example.svg)
+![](https://blog.monad.ga/img/post/Trie/Trie_tree_example.png)
 
 注意 $\text{Trie}$ 中的键值保存在边上而并非结点上，这一点与很多数据结构不同。由根结点出发，到达任意被标记结点的一条路径上各边字母，就组成了一个单词。如上图代表保存了 `{car, cat, cut}`。
 
