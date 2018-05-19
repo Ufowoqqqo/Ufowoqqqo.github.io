@@ -10,7 +10,7 @@ catalog:    true
 tags:
     - 题解
     - 可持久化线段树
-	- 二分答案
+    - 二分答案
 ---
 
 ## $\text{Description}$
