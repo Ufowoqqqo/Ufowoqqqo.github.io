@@ -32,7 +32,10 @@
     <link type="text/css" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <!--<link rel="stylesheet" href="{{ "/css/font-awesome.min.css" | prepend: site.baseurl }}">-->
 
-
+    {% if page.mathjax %}
+    <!-- KaTeX -->
+    <link href="https://cdn.bootcss.com/KaTeX/0.9.0/katex.min.css" rel="stylesheet" integrity="sha384-TEMocfGvRuD1rIAacqrknm5BQZ7W7uWitoih+jMNFXQIbNl16bO8OZmylH/Vi/Ei" crossorigin="anonymous">
+    {% endif %}
 
     <!-- Hux Delete, sad but pending in China
     <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
