@@ -55,7 +55,7 @@ $sab_v=\delta b_u\times sa_v$
 
 $\delta a_v\'\text{ = }\delta a_v+\delta a_u$
 
-$sa_v'=sa_v+\delta a_u\times len_v$
+$sa_v\'\text{ = }sa_v+\delta a_u\times len_v$
 
 $sab_v\'\text{ = }sab_v+\delta a_u\times sb_v=\delta b_u\times sa_v + \delta a_u\times sb_v$
 
