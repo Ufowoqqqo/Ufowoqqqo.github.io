@@ -27,11 +27,11 @@ $sab_u=\sum_{i=l}^{r\uparrow} a_i\times b_i$
 
 若先下传 $\delta a_u$，则有
 
-$\delta a_v' = \delta a_v + \delta a_u$
+$\delta a_v\'\text{ = }\delta a_v + \delta a_u$
 
-$sa_v' = sa_v +\delta a_u\times len_v$
+$sa_v\'\text{ = }sa_v +\delta a_u\times len_v$
 
-$sab_v'=sab_v+\delta a_u\times sb_v$
+$sab_v\'\text{ = }sab_v+\delta a_u\times sb_v$
 
 再下传 $\delta b_u$，则有
 
@@ -39,7 +39,7 @@ $\delta b_v=\delta b_u$
 
 $sb_v=\delta b_u\times len_v$
 
-$sab_v=\delta b_u\times sa_v'=\delta b_u\times (sa_v+\delta a_u\times len_v)=\delta b_u\times sa_v+\delta a_u\times sb_v$
+$sab_v=\delta b_u\times sa_v\'\text{ = }\delta b_u\times (sa_v+\delta a_u\times len_v)=\delta b_u\times sa_v+\delta a_u\times sb_v$
 
 ### 先 $b$ 后 $a$
 
@@ -53,10 +53,10 @@ $sab_v=\delta b_u\times sa_v$
 
 再下传 $\delta a_u$，则有
 
-$\delta a_v'=\delta a_v+\delta a_u$
+$\delta a_v\'\text{ = }\delta a_v+\delta a_u$
 
 $sa_v'=sa_v+\delta a_u\times len_v$
 
-$sab_v'=sab_v+\delta a_u\times sb_v=\delta b_u\times sa_v + \delta a_u\times sb_v$
+$sab_v\'\text{ = }sab_v+\delta a_u\times sb_v=\delta b_u\times sa_v + \delta a_u\times sb_v$
 
-于是可以发现两种操作顺序后，$sab_v'$ 的值是相等的，任选其中一种方式进行维护即可。
+于是可以发现两种操作顺序后，$sab_v\'$ 的值是相等的，任选其中一种方式进行维护即可。
