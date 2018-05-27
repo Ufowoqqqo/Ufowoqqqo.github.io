@@ -74,3 +74,51 @@ tags:
 由此得到启发，我们建立 $(n+1)$ 棵权值线段树，第 $i$ 棵保存 $[1, i]$ 的权值情况。考虑到第 $i$ 棵与第 $(i-1)$ 棵有且只有一个结点不同，恰好符合可持久化线段树的作用。
 
 二分答案和查询的时间复杂度都为 $O(\log n)$，因此总的时间复杂度为 $O(m\log^2 n)$。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+
+using namespace std;
+
+const int MAXN = 1e5 + 100;
+
+struct SegmentTree {
+	struct Node {
+		Node *c[2];
+		int v;
+		int l, r, m;
+		Node (): v(0), l(0), r(0), m(0) { c[0] = c[1] = NULL; }
+		Node (int x, int y): v(0), l(x), r(y), m(x + y >> 1) { c[0] = c[1] = NULL; }
+		void pushup() { v = c[0] -> v + c[1] -> v; }
+	} *r[MAXN], nodes[MAXN * 20], *cur;
+	SegmentTree () { memset(r, 0, sizeof r); cur = nodes; }
+
+	void make(Node *&u, int l, int r) { *cur = Node(l, r); u = cur++; if (l < r) { make(u -> c[0], l, u -> m); make(u -> c[1], u -> m + 1, r); } }
+
+	void add(Node *last, Node *&u, int p) {
+		*cur = Node(last -> l, last -> r); u = cur++; if (u -> l == p && u -> r == p) { u -> v = last -> v + 1; return; }
+		int t = u -> m < p; add(last -> c[t], u -> c[t], p); u -> c[t ^ 1] = last -> c[t ^ 1]; u -> pushup();
+	}
+	
+	int ask(Node *u, int l, int r) { if (r < u -> l || u -> r < l) return 0; if (l <= u -> l && u -> r <= r) return u -> v; return ask(u -> c[0], l, r) + ask(u -> c[1], l, r); }
+} t;
+
+pair <int, int> num[MAXN];
+int rev1[MAXN], rev2[MAXN];
+int n;
+
+int main(void) {
+	int m; scanf("%d%d", &n, &m);
+	t.make(t.r[0], 1, n);
+	for (int i = 1; i <= n; i++) { scanf("%d", &num[i].first); num[i].second = i; }
+	sort(num + 1, num + n + 1);
+	for (int i = 1; i <= n; i++) { rev1[i] = num[i].first; rev2[num[i].second] = i; }
+	for (int i = 1; i <= n; i++) t.add(t.r[i - 1], t.r[i], rev2[i]);
+	for (; m--; ) { int i, j, k; scanf("%d%d%d", &i, &j, &k); printf("%d\n", solve(i, j, k)); }
+	return 0;
+}
+```
