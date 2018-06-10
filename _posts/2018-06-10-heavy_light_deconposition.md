@@ -1,62 +1,63 @@
 ---
 layout:     post
-title:      "����ʷ֌W���Pӛ"
+title:      "樹鏈剖分學習筆記"
 date:       2018-06-10 20:30:00
 author:     "Ufowoqqqo"
 header-img: "img/solution_bg.png"
 mathjax:    true
 catalog:    true
 tags:
-    - ���ݽṹ�ʼ�
-    - �����ʷ�
+    - 数据结构笔记
+    - 树链剖分
 ---
 
-### �p��·���ʷ�
 
-�ڸ�ِ�г��������� $1$ ���·��֮�S�o��ԃ������Ҫ��ᘌ�߅�༰�c�ࡣ���������@Ȼ��ͨ�^�� $\text{LCA}$ ��� $2$ ���c̎���� $\text{LCA}$ ���������@��}�������M��^�g�ӷ�֮���|���������뵽�ܷ���� $\text{Segment Tree}$ ֮�֮�߼������Y���M�оS�o���𰸠��϶�֮��
+### 輕重路徑剖分
 
-�҂�֪������ $\text{Segment Tree}$ ������Ҫ�����M�Ѕ^�g����֮ǰ�᠑����̖�B�m֮ $1$ �Ρ������]����֮�������Ρ�ƽ�r���f����֮��朡���ָ�����˻��ɾ����ΑB֮�䣬�丸�ӌӼ��P�S��Ȼ���ڡ�����ձ�����֮�������������֮���������Ҫͨ�^����������֮߅�ֽM���õ� $1$ �l�l朡��ʷ�֮ԭ�t���������p���ӽY�c����
+在競賽中常常會遇到 $1$ 類樹上路徑之維護及詢問，主要爲針對邊權及點權。暴力做法顯然爲通過求 $\text{LCA}$ 後從 $2$ 個點處逐步向 $\text{LCA}$ 靠近。但這類問題往往都滿足區間加法之性質，很容易聯想到能否藉助 $\text{Segment Tree}$ 之類之高級數據結構進行維護，答案爲肯定之。
 
-���������~�Y�c $u$����**�؃���** $v$ ���x�������Ә� $\mathrm{size}$ ���֮�ӽY�c��߅ $(u, v)$ �t��**��߅**��$u$ �c���N�ӽY�c֮�B߅�t��**�p߅**��������֮��߅�B�� $1$ �𣬾͵õ���**���**���@Щ��朼��� $\text{Segment Tree}$ ���S�o֮����
+我們知道，以 $\text{Segment Tree}$ 爲例，要用其進行區間操作之前提爲「編號連續之 $1$ 段」。考慮樹上之對應情形。平時所說樹上之「鏈」所指即爲退化成線性形態之樹，其父子層級關係依然存在。若於普遍情形之樹上引入相類似之概念，首先需要通過對樹上相鄰之邊分組，得到 $1$ 條條鏈。剖分之原則即根據「輕重子結點」。
+
+對於任意非葉結點 $u$，其**重兒子** $v$ 定義爲對應子樹 $\mathrm{size}$ 最大之子結點，邊 $(u, v)$ 則爲**重邊**，$u$ 與其餘子結點之連邊則爲**輕邊**。將相鄰之重邊連在 $1$ 起，就得到了**重鏈**。這些重鏈即爲 $\text{Segment Tree}$ 所維護之對象。
 
 ![](http://s16.sinaimg.cn/large/6974c8b2gb4c1e1110f6f&690)
 
-### �������YՓ
+### 定理及結論
 
-- ��� $u$ ֮�ӽY�c $v$���� $(u, v)$ ���p߅�r��$\mathrm{size}(v) < \lfloor\frac{\mathrm{size}(u)}{2}\rfloor$��
+- 對於 $u$ 之子結點 $v$，當 $(u, v)$ 爲輕邊時，$\mathrm{size}(v) < \lfloor\frac{\mathrm{size}(u)}{2}\rfloor$。
 
-  �C�����������x�����з��~�Y�c���¶��� $1$ �l��߅���������O $\mathrm{size}(v) \ge \lfloor\frac{\mathrm{size}(u)}{2}\rfloor$���t���� $u$ ����֮��߅ $(u, v')$ ���ԣ�$\mathrm{size}(v') \ge \mathrm{size}(v) \ge \lfloor\frac{\mathrm{size}(u)}{2}\rfloor$���ɵ� $\mathrm{size}(u) \ge \mathrm{size}(v)+\mathrm{size}(v')+1 \ge \mathrm{size}(u)+1$���c���Oì�ܡ�
+  證明：根據定義，所有非葉結點往下都有 $1$ 條重邊。不妨假設 $\mathrm{size}(v) \ge \lfloor\frac{\mathrm{size}(u)}{2}\rfloor$，則对于 $u$ 向下之重邊 $(u, v')$ 而言，$\mathrm{size}(v') \ge \mathrm{size}(v) \ge \lfloor\frac{\mathrm{size}(u)}{2}\rfloor$，可得 $\mathrm{size}(u) \ge \mathrm{size}(v)+\mathrm{size}(v')+1 \ge \mathrm{size}(u)+1$，與假設矛盾。
 
-- �����������ã��������Ǹ��Y�c $u$���� $u$ ����֮·���ϣ��p߅�����֮�l���������^ $\log n$����ÿ���� $1$ �l�p߅��$\mathrm{size}$ ֵ�͕��p�롣
+- 由上述定理得，對於任意非根結點 $u$，在 $u$ 到根之路徑上，輕邊及重鏈之條數均不超過 $\log n$，因爲每遇到 $1$ 條輕邊，$\mathrm{size}$ 值就會減半。
 
-- �\����֪ $\text{Segment Tree}$ ֮���������}�s�Ƞ� $\log n$����˘���ʷ�֮�}�s�Ƞ� $O(n\log^2n)$��
+- 衆所周知 $\text{Segment Tree}$ 之基本操作複雜度爲 $\log n$，因此樹鏈剖分之複雜度爲 $O(n\log^2n)$。
 
-- �� $\text{DFS}$ ���У���ĳ�Y�c����֮�Ә�֮�r�g�����B�m $1$ �Ρ�
-
-
-
-### ���F
-
-��춘���ʷ���ᘌ�߅�M�еģ�����ھS�o�Y�c���P��Ϣ�rҪ��ȡС���ɣ��������Y�c��Ϣ�ŵ��c���H�Y�c֮�B߅���M�оS�o�������Ҫ����̓���Y�c��
-
-ͨ�^ $2$ �� $\text{DFS}$ ���F�A̎����
-
-- �� $1?$ ��������ϸ��Y�c֮������Ϣ������ $\mathrm{depth,heavy\_son,parent,size}?$����̎����٘����
-- �� $2$ �Ό�����߅�B��朣��K��ʼ�� $\text{Segment Tree}$�����w�أ�
-  - ���x $\mathrm{top}(u)$ �� $u$ �������֮픶˽Y�c��̖��$w(u)$ �� $u$ �c���Y�c֮�B߅�� $\text{Segment Tree}$ �Ќ����ˡ�
-  - ���������~�Y�c $u$���� $\mathrm{top}(\mathrm{heavy\_son}(u))\leftarrow\mathrm{top}(u)$��$w(\mathrm{heavy\_son}(u))$ ���r�g���ۼӡ�����ʼ�r�Й�ֵ���t�� $\text{Segment Tree}$ �������Y�c�M�І��c�޸ġ����]������ϸ�߅����B�m�������f�w $\mathrm{heavy\_son}(u)$��
-  - ��̎�����N���p���� $v$���� $\mathrm{top}(v)\leftarrow v$��$w(v)$ ���r�g���ۼӡ�����ʼ�r�Й�ֵ���t�� $\text{Segment Tree}$ �������Y�c�M�І��c�޸ġ��f�w $v$��
-
-��� $(u,v)$ ·��֮�޸Ļ�ԃ������Ҫ�����ʳ���������M��̎�������w�أ����}�������̣�ֱ�� $u=v$��
-
-- �� $\mathrm{top}(u)=\mathrm{top}(v)$���� $u, v$ ����ͬ $1$ ����ϣ��t�� $\text{Segment Tree}$ ��̎�팦���Σ��K�Y�����β�����
-- ��t�����] $\mathrm{depth}(u)\ge\mathrm{depth}(v)$���t�� $\text{Segment Tree}$ ��̎�� $[\mathrm{top}(u),u]$ �����Σ��K�� $u\leftarrow \mathrm{parent}(\mathrm{top}(u))$��
-
-��Ҫע�⣬̎���c���r������K�K����ͬ $1$ ���̎�Y�����Ǖ�����ͬ $1$ �c���tԓ�c��δ��̎������Ҫ�~�������
+- 在 $\text{DFS}$ 序中，以某結點爲根之子樹之時間戳爲連續 $1$ 段。
 
 
 
-### ģ��
+### 實現
+
+由於樹鏈剖分是針對邊進行的，因此在維護結點相關信息時要採取小技巧，將自身結點信息放到與父親結點之連邊上進行維護，因此需要新增虛根結點。
+
+通過 $2$ 次 $\text{DFS}$ 實現預處理。
+
+- 第 $1?$ 次求出樹上各結點之對應信息，包括 $\mathrm{depth,heavy\_son,parent,size}?$。此處不再贅述。
+- 第 $2$ 次將各重邊連成鏈，並初始化 $\text{Segment Tree}$。具體地，
+  - 定義 $\mathrm{top}(u)$ 爲 $u$ 所在重鏈之頂端結點編號，$w(u)$ 爲 $u$ 與父結點之連邊在 $\text{Segment Tree}$ 中對應下標。
+  - 對於任意非葉結點 $u$，令 $\mathrm{top}(\mathrm{heavy\_son}(u))\leftarrow\mathrm{top}(u)$，$w(\mathrm{heavy\_son}(u))$ 爲時間戳累加。若初始時有權值，則在 $\text{Segment Tree}$ 上相應結點進行單點修改。考慮到重鏈上各邊下標須連續，立即遞歸 $\mathrm{heavy\_son}(u)$。
+  - 再處理其餘各輕兒子 $v$。令 $\mathrm{top}(v)\leftarrow v$，$w(v)$ 爲時間戳累加。若初始時有權值，則在 $\text{Segment Tree}$ 上相應結點進行單點修改。遞歸 $v$。
+
+對於 $(u,v)$ 路徑之修改或詢問，需要將其剖成若干重鏈進行處理。具體地，重複如下流程，直至 $u=v$。
+
+- 若 $\mathrm{top}(u)=\mathrm{top}(v)$，即 $u, v$ 已在同 $1$ 重鏈上，則在 $\text{Segment Tree}$ 上處理對應段，並結束本次操作；
+- 否則，考慮 $\mathrm{depth}(u)\ge\mathrm{depth}(v)$，則在 $\text{Segment Tree}$ 上處理 $[\mathrm{top}(u),u]$ 對應段，並令 $u\leftarrow \mathrm{parent}(\mathrm{top}(u))$。
+
+需要注意，處理點權時，若最終並非在同 $1$ 重鏈處結束而是會聚至同 $1$ 點，則該點尚未被處理，需要額外操作。
+
+
+
+### 模板
 
 ```cpp
 #include <algorithm>
@@ -156,7 +157,7 @@ int cnt_segnode;
 int top[MAXN], w[MAXN], maxw[MAXN];
 
 void dfs1(int u) {
-    if(son[u] != -1) { //���~�Y�c����̎���؃���
+    if(son[u] != -1) { //非葉結點優先處理重兒子
         top[son[u]] = top[u];
         w[son[u]] = ++cnt_segnode;
         st.update(st.root, cnt_segnode, cnt_segnode, A[son[u]]);
@@ -174,7 +175,7 @@ void dfs1(int u) {
     maxw[u] = cnt_segnode;
 }
 
-void add_path(int u, int v, long long d) { //·���ϸ��c����� d
+void add_path(int u, int v, long long d) { //路徑上各點權加上 d
     for(; u != v;) {
         int f1 = top[u], f2 = top[v];
 
@@ -197,7 +198,7 @@ void add_path(int u, int v, long long d) { //·���ϸ��c����� d
     st.update(st.root, w[u], w[u], d);
 }
 
-long long query_path(int u, int v) { //·���ϸ��c��֮��
+long long query_path(int u, int v) { //路徑上各點權之和
     long long s = 0;
 
     for(; u != v;) {
@@ -268,12 +269,12 @@ int main(void) {
             printf("%lld\n", query_path(x, y));
         }
 
-        if(op == 3) { //�Ә��ϸ��Y�c��ֵ���� z
+        if(op == 3) { //子樹上各結點權值加上 z
             scanf("%lld", &z);
             st.update(st.root, w[x], maxw[x], z % Ghastlcon);
         }
 
-        if(op == 4) printf("%lld\n", st.query(st.root, w[x], maxw[x])); //�Ә�Y�c��ֵ֮��
+        if(op == 4) printf("%lld\n", st.query(st.root, w[x], maxw[x])); //子樹結點權值之和
     }
 
     return 0;
