@@ -20,11 +20,11 @@ tags:
 
 迭代加深其實很好理解。從字面意思上來看，「迭代」意味着在之前的基礎上進行擴展，加深則顧名思義，是逐步增加求解的深度。以下 $2$ 幅圖很好地說明了常規 $\text{DFS}$ 與迭代加深的異同之處。
 
-![Normal DFS](img/0612_normal_dfs.png)
+![Normal DFS](/img/0612_normal_dfs.png)
 
 ---
 
-![ID-DFS](img/0612_id_dfs.png)
+![ID-DFS](/img/0612_id_dfs.png)
 
 實現上與常規 $\text{DFS}$ 並不太多不同。只是從小至大限制搜索深度，若在當前深度下搜不到答案，就把深度限制增加，重新進行 $1$ 次搜索，這就是**迭代加深**思想。
 
@@ -107,11 +107,11 @@ int main(void) {
 
 有 $1$ 類搜索問題，「初態」和「終態」都是確定的。這種情況下，可以從 $2$ 端同時出發，到中間匯合。
 
-![](img/0612_normal_dfs1.png)
+![](/img/0612_normal_dfs1.png)
 
 ---
 
-![](img/0612_meet_in_the_middle.png)
+![](/img/0612_meet_in_the_middle.png)
 
 
 
