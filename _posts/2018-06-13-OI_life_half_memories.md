@@ -1,7 +1,7 @@
 ---
 layout:     post
 title:      "搜索科学真谛  动态规划人生——OI 生涯半程回忆录"
-date:       2018-06-13 16:40:00
+date:       2019-06-13 16:40:00
 author:     "Ufowoqqqo"
 header-img: "img/solution_bg.png"
 mathjax:    true
