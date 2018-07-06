@@ -595,3 +595,106 @@ int main(void) {
 	return 0;
 }
 ```
+
+### $\text{#}6$
+
+#### $\text{T}1$
+
+对于质量为 $C[i]$、最大跳跃距离为 $S[i]$ 的鞋 $i$，考虑穿着它能否从 $1$ 跳到 $N$。
+
+首先标出所有 $D[j] \le C[i]$ 的柱子 $j$，这些柱子就是穿着 $i$ 时所允许的落脚点。为了能够跳完全程，当落脚于某个柱子 $j$ 时，下 $1$ 步的范围是 $[j + 1, j + S[i]]$。只有当这个范围内存在被标记的柱子时才能继续，否则无解。
+
+这样，问题可以转化为：求所有相邻的被标记柱子之间的最大距离 $d$。解存在，当且仅当 $d \le S[i]$。
+
+考虑如何实现这个最大距离的维护。
+
+首先可以发现，柱子的标记显然是存在顺序的，被标记的柱子数随着 $C[i]$ 的增大而单调不减。也就意味着我们可以把询问离线，按 $C[i]$ 升序考虑，这样每次只需新增 $C[i - 1] < D[j] \le C[i]$ 的柱子即可。每当新增 $1$ 个柱子 $m$，记其左边最近的柱子为 $l$，右边最近的柱子为 $r$，则需要删去距离 $r - l$，加入距离 $m - l$ 和 $r - m$。寻找两侧最近柱子可以通过 $\text{Fenwick Tree + Binary Search}$ 实现。
+
+要从 $1$ 个集合中删去、加入元素并求最值，可以用 $\text{Heap}$ 实现。只需将距离与 $\text{Heap}$ 下标作映射即可。
+
+时间复杂度为 $O(N\log ^2N)$。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+
+using namespace std;
+
+const int MAXN = 1e6;
+const int INF = 1e9 + 1;
+
+pair <int, int> D[MAXN];
+pair <int, pair<int, int> > shoes[MAXN];
+
+int N, t[MAXN];
+void add(int p) { for (int i = p; i <= N; i += (i & -i)) ++t[i]; }
+int ask(int p) { if (p > N) p = N; int s = 0; for (int i = p; 0 < i; i -= (i & -i)) s += t[i]; return s; }
+
+int rv[MAXN], hpid[MAXN], ans[MAXN];
+
+struct Heap {
+	int sz, v[MAXN];
+	Heap () { sz = 0; memset(v, 0, sizeof v); }
+	int up(int k) {
+		for (int i = k; i > 1; i >>= 1) {
+			int p = i >> 1;
+			if (rv[v[i]] > rv[v[p]]) { swap(v[i], v[p]); swap(hpid[v[i]], hpid[v[p]]); } else break;
+		}
+	}
+	
+	int down(int k) {
+		for (int i = k; (i << 1) <= sz; ) {
+			int c = i << 1; if ((c | 1) <= sz && rv[v[c | 1]] > rv[v[c]]) c |= 1;
+			if (rv[v[c]] > rv[v[i]]) { swap(v[i], v[c]); swap(hpid[v[i]], hpid[v[c]]); } else break;
+			i = c;
+		}
+	}
+	
+	void push(int k) { v[++sz] = k; up(hpid[k] = sz); }
+	void pop(int k) { v[k] = v[sz--]; hpid[v[k]] = k; up(k); down(k); }
+	int top() { return sz ? rv[v[1]] : INF; }
+} hp;
+
+int main(void) {
+	freopen("2543.in", "r", stdin);
+	freopen("2543.out", "w", stdout);
+	int K; scanf("%d%d", &N, &K);
+	for (int i = 1; i <= N; i++) { scanf("%d", &D[i].first); D[i].second = i; } sort(D + 1, D + N + 1);
+	for (int i = 1; i <= K; i++) { scanf("%d%d", &shoes[i].first, &shoes[i].second.first); shoes[i].second.second = i; } sort(shoes + 1, shoes + K + 1);
+	for (int i = 1, j = 1; i <= K; i++) {
+//		printf("%d %d %d\n", shoes[i].first, shoes[i].second.first, shoes[i].second.second);
+		for (; j <= N && D[j].first <= shoes[i].first; j++) {
+//			printf("%d %d\n", D[j].first, D[j].second);
+			int l, r, lid = 0, rid = 0;
+			
+			for (l = 0, r = D[j].second - 1; l + 1 < r; ) {
+				int m = l + r >> 1;
+				if (ask(D[j].second - 1) - ask(D[j].second - m - 1)) r = m; else l = m;
+			}
+			if (ask(D[j].second - 1) - ask(D[j].second - r - 1)) lid = D[j].second - r;
+			
+			for (l = 0, r = N - D[j].second; l + 1 < r; ) {
+				int m = l + r >> 1;
+				if (ask(D[j].second + m) - ask(D[j].second)) r = m; else l = m;
+			}
+			if (ask(D[j].second + r) - ask(D[j].second)) rid = D[j].second + r;
+			
+//			printf("%d %d\n", lid, rid);
+			
+			if (lid && rid) hp.pop(hpid[lid]);
+			if (lid) { rv[lid] = D[j].second - lid; hp.push(lid); }
+			if (rid) { rv[D[j].second] = rid - D[j].second; hp.push(D[j].second); }
+			
+			add(D[j].second);
+		}
+//		printf("%d\n", hp.top());
+		ans[shoes[i].second.second] = hp.top() <= shoes[i].second.first;
+//		for (int j = 1; j <= K; j++) printf("%d ", ans[j]); putchar('\n');
+	}
+	for (int i = 1; i <= K; i++) printf("%d\n", ans[i]);
+	return 0;
+}
+```
