@@ -350,3 +350,248 @@ int main(void) {
 	return 0;
 }
 ```
+
+### $\text{#}4$
+
+#### $\text{T}1$
+
+贪心。
+
+注意到兔子领先于乌龟的总秒数是 $1$ 定的，因此只需要合理分配给各站点停留。如果没有乌龟的威胁，当然是尽可能久地停留在权值大的站点。
+
+考虑乌龟的追及也不复杂。仍然按权值降序考虑停留，每次都把多余时间用完（即直到乌龟赶上兔子才停止在当前站点的停留）即可。
+
+时间复杂度为 $O(n\logn)$。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+
+using namespace std;
+
+#define int long long
+
+const int MAXN = 1e6;
+const int MAXL = 1e7;
+
+pair <int, int> station[MAXN];
+int lim, t[MAXN];
+
+void add(int p, int v) {
+	for (int i = p; i <= lim; i += (i & -i)) t[i] += v;
+}
+int ask(int p) {
+	int s = 0;
+	for (int i = p; i; i -= (i & -i)) s += t[i];
+	return s;
+}
+
+signed main(void) {
+	freopen("2538.in", "r", stdin);
+	freopen("2538.out", "w", stdout);
+	int L, N, WuGui, TuZi;
+	scanf("%lld%lld%lld%lld", &L, &N, &WuGui, &TuZi);
+	for (int i = 0; i < N; i++) {
+		scanf("%lld%lld", &station[i].second, &station[i].first);
+		lim = max(lim, station[i].second);
+	}
+	sort(station, station + N, greater<pair<int, int> >());
+	int ans = 0;
+	for (int i = 0; i < N; i++) {
+		int cnt = (WuGui - TuZi) * station[i].second - ask(station[i].second);
+		if (cnt > 0) {	
+			add(1, cnt);
+			ans += cnt * station[i].first;
+		}
+	}
+	printf("%lld\n", ans);
+	return 0;
+}
+```
+
+#### $\text{T}2$
+
+目标是最小化扔掉的鞋，等价于最大化保留的鞋。
+
+在柱子 $i$ 进行的决策显然取决于 $D[i]$ 和当前剩余鞋的数量（从而知道栈顶的位置）。因此不妨记 $f[i]$ 为到达柱子 $i$ 时最多能保留的鞋，所求即为 $K-f[N]$。
+
+状态转移时，由于直接扔鞋并不受 $D[i]$ 限制，可以直接扔连续的 $1$ 段，不妨设扔掉 $j$ 双鞋（$0 \le j < f[i]$），则当前穿着的就应该是第 $(K - f[i] + j + 1)$ 双鞋，为了方便表述记为 $ns$。显然 $C[ns]$ 必须不小于 $D[i]$。
+
+$\forall 1 \le k \le S[i]$，若 $C[ns] \ge D[i + k]$，则可以考虑穿着 $ns$ 从 $i$ 跳到 $i+k$，从而用 $f[i] - j$ 尝试更新 $f[i + k]$。
+
+时间复杂度为 $O(NKS)$。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+
+using namespace std;
+
+const int MAXN = 300;
+const int MAXK = 300;
+
+int D[MAXN], C[MAXK], S[MAXK], f[MAXN];
+
+int main(void) {
+	freopen("2539.in", "r", stdin);
+	freopen("2539.out", "w", stdout);
+	int N, K;
+	scanf("%d%d", &N, &K);
+	for (int i = 0; i < N; i++) scanf("%d", &D[i]);
+	for (int i = 0; i < K; i++) scanf("%d%d", &C[i], &S[i]);
+	f[0] = K;
+	for (int i = 0; i + 1 < N; i++)
+		for (int j = 0; j < f[i]; j++) { //pairs of shoes to throw away at column i
+			int ns = K - f[i] + j; //the new pair of shoe
+			if (C[ns] >= D[i])
+				for (int k = 1; k <= S[ns] && i + k < N; k++) //steps
+					if (C[ns] >= D[i + k]) f[i + k] = max(f[i + k], f[i] - j);
+		}
+	printf("%d\n", K - f[N - 1]);
+	return 0;
+}
+```
+
+### $\text{#}5$
+
+#### $\text{T}1$
+
+整个文件系统显然形成了树形结构，其中每个文件是叶子结点。记 $l[i]$ 为结点 $i$ 文件（夹）名长度。特别地，令叶子结点的 $l[i]$ 为实际长度减去 $1$。
+
+考虑相对路径中文件夹之间的转移，其实就是边权，且是有向的。即若 $u$ 为 $v$ 的父亲，则 $w(u, v) = l[v] + 1, w(v, u) = 3$。
+
+如果直接枚举出发结点，并尝试算出到达所有叶子结点的路径长度之和，会发现难以实现。
+
+
+
+从根结点出发的答案显然是非常容易求得的。记 $f[i]$ 为根结点至 $i$ 路径上边权之和，则所求即为 $\sum_{m[i] = 0} f[i]$，其中 $m[i]$ 为 $i$ 的子结点数量。
+
+考虑将出发点从 $u$ 转移至其子结点 $v$ 时答案产生的影响。记 $c[u]$ 为以 $u$ 为根结点的子树内叶子结点的个数。
+
+对于以 $v$ 为根节点的子树内的叶子结点，到达它们的路径都省去了边 $(u, v)$，因此总共减去 $(l[v] + 1) * c[v]$。
+
+对于除上述以外的其它叶子结点，到达它们的路径都增加了边 $(v, u)$，因此总共加上 $(c[1] - c[v]) * 3$。
+
+转移过程中取所有情况下答案的最小值即为最终答案。
+
+
+
+时间复杂度为 $O(N)$。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+
+using namespace std;
+
+#define int long long
+
+const int MAXL = 20;
+const int MAXN = 2e5;
+
+struct Edge { int v; Edge *nxt; } e[MAXN], *cur, *h[MAXN];
+
+int l[MAXN], m[MAXN], f[MAXN], c[MAXN], ans[MAXN], minans;
+
+void dfs0(int u) {
+	if (!m[u]) { ans[1] += f[u]; c[u] = 1; }
+	for (Edge *i = h[u]; i; i = i -> nxt) {
+		f[i -> v] = f[u] + l[i -> v] + 1;
+		dfs0(i -> v);
+		c[u] += c[i -> v];
+	}
+}
+
+void dfs1(int u) {
+//	printf("ans[%d] = %d\n", u, ans[u]);
+	minans = min(minans, ans[u]);
+	for (Edge *i = h[u]; i; i = i -> nxt)
+		if (m[i -> v]) {
+			ans[i -> v] = ans[u] - c[i -> v] * (l[i -> v] + 1) + (c[1] - c[i -> v]) * 3;
+			dfs1(i -> v);
+		}
+}
+
+signed main(void) {
+	freopen("2541.in", "r", stdin);
+	freopen("2541.out", "w", stdout);
+	int N; scanf("%lld", &N); cur = e;
+	for (int i = 1; i <= N; i++) {
+		char s[MAXL]; scanf("%s%lld", s, &m[i]);
+		l[i] = strlen(s); if (!m[i]) --l[i];
+		for (int j = 0; j < m[i]; j++) {
+			scanf("%lld", &(cur -> v));
+			cur -> nxt = h[i];
+			h[i] = cur++;
+		}
+	}
+	dfs0(1); //printf("%d\n", ans[0]);
+	minans = ans[1]; dfs1(1); printf("%lld\n", minans);
+	return 0;
+}
+```
+
+#### $\text{T}2$
+
+对于询问 $i$，所求的实际上就是在 $N$ 个位置中选取 $i$ 个放置 $0$（根据题意，其中第 $1$ 个 $0$ 必须放在首位），每相邻 $2$ 个 $0$ 之间都是以 $1$ 为首项，公差为 $1$ 的等差数列。求由此得到的所有最终数列中，与原数列的最少不同位计数。
+
+
+
+这个问题实际上可以动态地来看待，即考虑每 $1$ 位放什么。显然，每 $1$ 位的决策受到上 $1$ 位的影响，因此，“当前位数值”就是状态空间中的 $1$ 维。当然还有必不可少的“当前位置”。除此之外，我们还关心的是放置了多少个 $0$。因为这决定着如何确保最终方案的合法性。
+
+基于上述考虑，不妨记 $f[i][j][k]$ 为前 $i$ 位已放置了 $j$ 个 $0$，其中第 $i$ 位的值为 $k$ 时与原数列的最少不同位计数。
+
+若下标从 $0$ 开始，边界为 $f[0][1][0] = a[0] \neq 0$。询问 $i$ 所求为 $min\{f[N - 1][i][j]\}$，其中 $0 \le j < N$。
+
+状态的转移可以采取填表法。已知 $f[i][j][k]$，下 $1$ 位的填写显然有 $2$ 种策略：放置 $1$ 个 $0$，或延续当前的等差数列。分别对应用 $f[i][j][k] + (a[i + 1] \neq 0)$ 尝试更新 $f[i + 1][j + 1][0]$ 和用 $f[i][j][k] + (a[i + 1] \neq k + 1)$ 更新 $f[i + 1][j][k + 1]$。
+
+
+
+时间复杂度为 $O(N^3)$。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+
+using namespace std;
+
+const int MAXN = 2e2;
+
+int f[MAXN][MAXN][MAXN], a[MAXN];
+
+int main(void) {
+	freopen("2542.in", "r", stdin);
+	freopen("2542.out", "w", stdout);
+	int N; scanf("%d", &N);
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j <= N; j++)
+			for (int k = 0; k < N; k++)
+				f[i][j][k] = N;
+	for (int i = 0; i < N; i++) scanf("%d", &a[i]);
+	f[0][1][0] = (bool)a[0];
+	for (int i = 0; i + 1 < N; i++)
+		for (int j = 1; j <= i + 1; j++)
+			for (int k = 0; k <= i; k++) {
+				f[i + 1][j + 1][0] = min(f[i + 1][j + 1][0], f[i][j][k] + (bool)a[i + 1]);
+				f[i + 1][j][k + 1] = min(f[i + 1][j][k + 1], f[i][j][k] + (a[i + 1] != k + 1));
+			}
+	for (int i = 1; i <= N; i++) {
+		int ans = N;
+		for (int j = 0; j < N; j++) ans = min(ans, f[N - 1][i][j]);
+		printf("%d\n", ans);
+	}
+	return 0;
+}
+```
