@@ -478,7 +478,7 @@ int main(void) {
 
 坐标范围较大，需要离散化。
 
-时间复杂度 O(N\log N)。
+时间复杂度 $O(N\log N)$。
 
 ```cpp
 #include <algorithm>
