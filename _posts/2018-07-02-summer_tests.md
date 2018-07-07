@@ -458,6 +458,75 @@ int main(void) {
 }
 ```
 
+#### $\text{T}3$
+
+容易证明取得最优值的 $y$ $1$ 定在所有 $e[i]$ 构成的集合中。考虑选择 $1$ 部分学生使用传送机，其中 $\sum |s[i]|$ 为定值，因此目标是最小化 $\sum |e[i]-y|$。由中位数定理可知，使总和最小的 $y$ 就是所选中的 $e[i]$ 的中位数。对于学生集合的任意子集都有该结论，因此最终的 $y$ 也必定落在某个 $e[i]$ 处。
+
+得到了 $y$ 的备选集合之后考虑如何计算距离总和。不妨记 $f(y)$ 为传送机终点位于 $y$ 处时各学生走路距离之和，$g(i, y)$ 为传送机终点位于 $y$ 处时学生 $i$ 走路距离，显然有 $f(y)=\sum g(i,y)$。
+
+对于每个学生 $i$，考虑 $g(i, y)$ 随 $y$ 的变化趋势。根据 $a[i]$ 与 $0$ 和 $a[i]$ 与 $b[i]$ 的大小关系分 $4$ 类讨论，不难得到如下图像。
+
+![](http://10.3.35.134/notes/584105121a01410c2d4e6340//problemNote_2540/1.png)
+
+可以发现 $g(i, y)$ 关于 $y$ 的图像的变化规律可以分段，并且最初都取 $|s[i]-e[i]|$。
+
+以 $s[i]<0, s[i]<e[i]$ 为例，分界点分别为 $2s[i]$, e[i]$ 和 $2e[i]-2s[i]$。运用差分思想，我们在 $2s[i]$ 处打上 $-1$ 标记，$e[i]$ 处打上 $+2$ 标记，$2e[i]-2s[i]$ 处打上 $-1$ 标记。记 $delta[i]$ 为 $i$ 处的标记，$p[i]$ 为 $delta[i]$ 的前缀和，考虑相邻的分界点 $i, j$，有 $f(j)=f(i)+p[i]*(j - i)$。
+
+对于单个学生可以这样操作，当然也就适用于全体学生。每次将 $y$ 右移时只可能会有 $1$ 部分学生的 $g$ 值发生变动，因此在原 $f$ 值的基础上考虑变动即可。
+
+由此，我们可以先求出所有学生都不使用传送机时的 $f$ 值，再考虑将传送机位置逐渐右移，通过类似上述的方法即可快速求得新的 $f$ 值。
+
+坐标范围较大，需要离散化。
+
+时间复杂度 O(N\log N)。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+#define int long long
+
+const int MAXN = 1e6;
+
+int a[MAXN], b[MAXN], dt[MAXN];
+vector <int> v;
+
+inline int discrete(int p) { return lower_bound(v.begin(), v.end(), p) - v.begin(); }
+
+signed main(void) {
+	freopen("2540.in", "r", stdin);
+	freopen("2540.out", "w", stdout);
+	int N, cur = 0; scanf("%lld", &N);
+	for (int i = 0; i < N; i++) {
+		scanf("%lld%lld", &a[i], &b[i]); cur += abs(a[i] - b[i]);
+		if (abs(a[i]) >= abs(a[i] - b[i])) continue;
+		v.push_back(b[i]);
+		if (a[i] < 0 && a[i] < b[i] || a[i] >= 0 && a[i] >= b[i]) { v.push_back(0); v.push_back(b[i] << 1); }
+		else { v.push_back(a[i] << 1); v.push_back(b[i] - a[i] << 1); }
+	}
+	sort(v.begin(), v.end()); v.erase(unique(v.begin(), v.end()), v.end());
+	for (int i = 0; i < N; i++)
+		if (abs(a[i]) < abs(a[i] - b[i])) {
+			dt[discrete(b[i])] += 2;
+			if (a[i] < 0 && a[i] < b[i] || a[i] >= 0 && a[i] >= b[i]) { --dt[discrete(0)]; --dt[discrete(b[i] << 1)]; }
+			else { --dt[discrete(a[i] << 1)]; --dt[discrete(b[i] - a[i] << 1)]; }
+		}
+	int ans = cur, dt_pf = 0;
+	for (int i = 0; i < (signed)v.size(); i++) {
+		if (i) { cur += dt_pf * (v.at(i) - v.at(i - 1)); ans = min(ans, cur); }
+		dt_pf += dt[i];
+	}
+	printf("%lld\n", ans);
+	return 0;
+}
+```
+
 ### $\text{#}5$
 
 #### $\text{T}1$
