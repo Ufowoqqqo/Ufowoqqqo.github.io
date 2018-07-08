@@ -767,3 +767,130 @@ int main(void) {
 	return 0;
 }
 ```
+
+
+#### $\text{T}2$
+
+对于每个学生 $i$，不使用传送机的花费为 $\|s[i]-e[i]\|$，使用传送机的最小花费为 $\min\{\|s[i]-x[j]\|+\|e[i]-y[j]\|+z[j]\}$。
+
+绝对值符号无法直接处理，考虑分类讨论。
+
+按照 $s[i]$ 与 $x[j]$ 和 $e[i]$ 与 $y[j]$ 之间的大小关系，显然可以分为 $4$ 类。
+
+以 $s[i] \ge x[j], e[i] \ge y[j]$ 为例，花费为 $s[i] - x[j] + e[i] - y[j] + z[j]$，即 $(s[i] + e[i]) + (z[j] - x[j] - y[j])$，其中前 $1$ 个括号对于特定的学生是定值，因此目标就是在 $x[j] \le s[i], y[j] \le e[i]$ 的范围内最小化 $z[j] - x[j] - y[j]$（如果存在）。对应到 $2$ 维的平面直角坐标系上，可以看作求以 $(s[i], e[i])$ 为右上角的矩形中的最小值。
+
+这是经典问题，可以将询问离线，用扫描线配合 $\text{Fenwick Tree}$ 维护前缀最值实现。
+
+其余 $3$ 种情况类似。注意坐标范围较大，需要将 $y$ 值离散化。
+
+时间复杂度为 $O((N+M)\log (N+M))$。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+#define int long long
+
+const int MAXN = 1e6;
+const int MAXM = 1e6;
+const int INF = 0x7fffffff;
+
+struct SLINGSHOT {
+	int x, y, t;
+} slingshot[MAXN];
+bool cmps_l(SLINGSHOT i, SLINGSHOT j) {
+	return i.x < j.x;
+}
+bool cmps_g(SLINGSHOT i, SLINGSHOT j) {
+	return j.x < i.x;
+}
+
+struct MANURE {
+	int a, b, c;
+} manure[MAXM];
+int M, ans[MAXM];
+bool cmpm_l(MANURE i, MANURE j) {
+	return i.a < j.a;
+}
+bool cmpm_g(MANURE i, MANURE j) {
+	return j.a < i.a;
+}
+
+int K, t[MAXM];
+int add(int p, int v) {
+	for (int i = p; i <= K; i += (i & -i)) t[i] = min(t[i], v);
+}
+int ask(int p) {
+	int r = INF;
+	for (int i = p; i; i -= (i & -i)) r = min(r, t[i]);
+	return r;
+}
+
+vector <int> v;
+inline int discrete(int p) {
+	return lower_bound(v.begin(), v.end(), p) - v.begin() + 1;
+}
+
+void debug_output() {
+	for (int i = 0; i < M; i++) printf("%lld ", ans[i]);
+	putchar('\n');
+}
+
+signed main(void) {
+	freopen("2544.in", "r", stdin);
+	freopen("2544.out", "w", stdout);
+	int N;
+	scanf("%lld%lld", &N, &M);
+	for (int i = 0; i < N; i++) {
+		scanf("%lld%lld%lld", &slingshot[i].x, &slingshot[i].y, &slingshot[i].t);
+		v.push_back(slingshot[i].y);
+	}
+	for (int i = 0; i < M; i++) {
+		scanf("%lld%lld", &manure[i].a, &manure[i].b);
+		manure[i].c = i;
+		ans[i] = abs(manure[i].a - manure[i].b);
+		v.push_back(manure[i].b);
+	}
+	sort(v.begin(), v.end());
+	v.erase(unique(v.begin(), v.end()), v.end());
+	K = (signed)v.size();
+
+	memset(t, 0x7f, sizeof t);
+	sort(slingshot, slingshot + N, cmps_l);
+	sort(manure, manure + M, cmpm_l);
+	for (int i = 0, j = 0; i < M; i++) {
+		for (; j < N && slingshot[j].x <= manure[i].a; j++) add(discrete(slingshot[j].y), slingshot[j].t - slingshot[j].x - slingshot[j].y);
+		ans[manure[i].c] = min(ans[manure[i].c], manure[i].a + manure[i].b + ask(discrete(manure[i].b)));
+	}
+
+	memset(t, 0x7f, sizeof t);
+	for (int i = 0, j = 0; i < M; i++) {
+		for (; j < N && slingshot[j].x <= manure[i].a; j++) add(K - discrete(slingshot[j].y) + 1, slingshot[j].y - slingshot[j].x + slingshot[j].t);
+		ans[manure[i].c] = min(ans[manure[i].c], manure[i].a - manure[i].b + ask(K - discrete(manure[i].b) + 1));
+	}
+//	debug_output();
+
+	memset(t, 0x7f, sizeof t);
+	sort(slingshot, slingshot + N, cmps_g);
+	sort(manure, manure + M, cmpm_g);
+	for (int i = 0, j = 0; i < M; i++) {
+		for (; j < N && manure[i].a <= slingshot[j].x; j++) add(discrete(slingshot[j].y), slingshot[j].x - slingshot[j].y + slingshot[j].t);
+		ans[manure[i].c] = min(ans[manure[i].c], manure[i].b - manure[i].a + ask(discrete(manure[i].b)));
+	}
+
+	memset(t, 0x7f, sizeof t);
+	for (int i = 0, j = 0; i < M; i++) {
+		for (; j < N && manure[i].a <= slingshot[j].x; j++) add(K - discrete(slingshot[j].y) + 1, slingshot[j].x + slingshot[j].y + slingshot[j].t);
+		ans[manure[i].c] = min(ans[manure[i].c], ask(K - discrete(manure[i].b) + 1) - manure[i].a - manure[i].b);
+	}
+
+	for (int i = 0; i < M; i++) printf("%lld\n", ans[i]);
+	return 0;
+}
+```
