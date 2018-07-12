@@ -894,3 +894,192 @@ signed main(void) {
 	return 0;
 }
 ```
+
+### $\text{#}7$
+
+#### $\text{T}1$
+
+询问的限制是“当前已出现的节点编号”。考虑最终形态的森林（或通过添加虚根使其成为树以方便处理亦可），关于节点 $x$ 在时刻（数值上等于当时已出现的节点编号） $c$ 的询问，所求即为从 $x$ 出发，经过编号不大于 $c$ 的节点能够走的最长路。
+
+编号限制的解决方案，最直接的当然就是遍历。但是直接暴力显然是不可行的。
+
+考虑点分治，也许可以在时间复杂度得到保证的情况下暴力。
+
+前提是如下引理：对于任意路径，路径上编号最大的节点必在路径的端点。
+
+证明：反证法。假设路径上编号最大的节点不在端点，而在路径当中，则该点必然有子节点，且该子节点也在路径上。在原树中各节点的子节点编号均大于自身，因此与定义矛盾。假设不成立，原命题得证。
+
+对于分治得到当前树的根节点 $r$，考虑其会对哪些询问造成影响，也就是哪些询问的路径可能经过 $r$。令 $r$ 的深度 $dep[r] = 0$。
+
+ 1. 关于 $r$ 的询问，即从 $r$ 出发到子树中节点。询问可能有多个，考虑其中某个在时刻 $c[i]$ 的询问，根据上述引理，只要保证子树中某节点 $x$ 满足 $x \le c[i]$，即可从 $r$ 到达 $x$。所求即为子树中编号不超过 $c[i]$ 的节点的最大深度。
+
+ 2. 关于子树中节点 $x$ 的询问，考虑其中某个在时刻 $c[j]$ 的询问
+
+   2.1. 从 $x$ 出发到 $r$。类似地，若 $r \le c[j]$，即可从 $x$ 到达 $r$，尝试用 $dep[x]$ 更新该询问的答案；
+
+   2.2. 从 $x$ 出发到 $r$，再到达另 $1$ 子树中的节点 $y$。同理，只需保证 $y \le c[j]$，即可用 $dep[x] + dep[y]$ 更新答案。换言之，需要求得以 $r$ 为根的所有子树（除 $x$ 所在子树外）中编号不大于 $c[j]$ 的节点的最大深度。
+
+  事实上上述 $2$ 种子情况可以合并起来统 $1$ 处理。
+
+求带修前缀最值，可以用线段树实现。先在每次点分治的暴力时将所有深度扔进线段树，排除当前子树只需在更新答案之前将当前子树中所有点的值拿出来，求完答案再扔回去即可。
+
+时间复杂度 $O(N\log ^2N)$。实现上如果大量使用 `STL`（如多处可能用到 `vector`），会导致常数过大而 `TLE`；需要用手写的方式模拟实现即可。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#pragma GCC optimize("O3")
+using namespace std;
+
+#define lc ch[0]
+#define rc ch[1]
+
+const int MAXQ = 1e6;
+const int INF = 1e9 + 1;
+
+struct Vector { int x, y; Vector *nxt; };
+
+Vector e[MAXQ], *cur_e, *h_e[MAXQ];
+Vector q[MAXQ], *cur_q, *h_q[MAXQ];
+
+int ans[MAXQ];
+bool done[MAXQ];
+
+int root, f[MAXQ], sz[MAXQ];
+
+int v[MAXQ], cv;
+
+void dfs(int u, int p) {
+	f[u] = 0; sz[u] = 1; v[cv++] = u;
+	for (Vector *i = h_e[u]; i; i = i -> nxt)
+		if (i -> x != p && !done[i -> x]) { dfs(i -> x, u); sz[u] += sz[i -> x]; f[u] = max(f[u], sz[i -> x]); }
+}
+
+void getroot(int u) {
+	cv = 0; dfs(u, u); root = u;
+	for (int i = 0; i < cv; i++)
+		if (max(f[v[i]], sz[u] - sz[v[i]]) < max(f[root], sz[u] - sz[root])) root = v[i];
+}
+
+int dep[MAXQ];
+Vector subtree[MAXQ], *cur_s, *h_s[MAXQ];
+
+struct SegmentTree {
+//	struct Node {
+//		Node *ch[2];
+//		int v;
+//		int l, r, m;
+//		Node (int x, int y): v(-INF), l(x), r(y), m(x + y >> 1) { lc = rc = NULL; }
+//		void maintain() { v = max(lc -> v, rc -> v); }
+//	} *root;
+//	void build(Node *&u, int l, int r) { u = new Node(l, r); if (l < r) { build(u -> lc, l, u -> m); build(u -> rc, u -> m + 1, r); } }
+//	void update(Node *&u, int p, int v) { if (p < u -> l || u -> r < p) return; if (u -> l == u -> r) { u -> v = v; return; } update(u -> ch[u -> m < p], p, v); u -> maintain(); }
+//	int query(Node *u, int l, int r) { if (r < u -> l || u -> r < l) return -INF; if (l <= u -> l && u -> r <= r) return u -> v; return max(query(u -> lc, l, r), query(u -> rc, l, r)); }
+	
+	int n;
+	int f[MAXQ << 2];
+	void build(int l, int r)
+	{
+		n = 1e6 + 20;
+		for(int i = 0; i < n * 2; i ++)
+			f[i] = -INF;
+		
+		return;
+	}
+	
+	void update(int p, int x)
+	{
+	    for(f[p += n] = x; p >>= 1; )
+	        f[p] = max(f[p << 1], f[p << 1 | 1]);
+	
+	    return;
+	}
+	
+	int query(int s, int t)
+	{
+	    int o;
+	
+	    for(o = -INF, s += n, t += n + 1; s ^ t; s >>= 1, t >>= 1)
+	    {
+	        if(s & 1)
+	            o = max(o, f[s ++]);
+	        if(t & 1)
+	            o = max(o, f[-- t]);
+	    }
+	
+	    return o;
+	}
+} st;
+
+void bruteforce(int u, int p, int belong) {
+	dep[u] = dep[p] + 1; //printf("dep[%d] = %d\n", u, dep[u]);
+	st.update(u, dep[u]);
+	cur_s -> x = u; cur_s -> nxt = h_s[belong]; h_s[belong] = cur_s++;
+	for (Vector *i = h_e[u]; i; i = i -> nxt)
+		if (i -> x != p && !done[i -> x]) bruteforce(i -> x, u, belong);
+}
+
+void solve(int u) {
+//	printf("solve(%d)\n", u);
+	done[u] = true; dep[u] = 0;
+	cur_s = subtree; //memset(h_s, 0, sizeof h_s);
+	for (Vector *i = h_e[u]; i; i = i -> nxt)
+		if (!done[i -> x]) bruteforce(i -> x, u, i -> x);
+	for (Vector *i = h_q[u]; i; i = i -> nxt) {
+		int res = st.query(1, i -> x);
+//		printf("%d %d\n", i -> x, res);
+		ans[i -> y] = max(ans[i -> y], res);
+	}
+	st.update(u, 0);
+	for (Vector *i = h_e[u]; i; i = i -> nxt)
+		if (!done[i -> x]) {
+			for (Vector *j = h_s[i -> x]; j; j = j -> nxt) st.update(j -> x, -INF);
+			for (Vector *j = h_s[i -> x]; j; j = j -> nxt)
+				for (Vector *k = h_q[j -> x]; k; k = k -> nxt)
+					if (k -> x >= u)
+						ans[k -> y] = max(ans[k -> y], dep[j -> x] + st.query(1, k -> x));
+			for (Vector *j = h_s[i -> x]; j; j = j -> nxt) st.update(j -> x, dep[j -> x]);
+		}
+	st.update(u, -INF);
+	for (Vector *i = h_e[u]; i; i = i -> nxt)
+		if (!done[i -> x]) {
+			for (Vector *j = h_s[i -> x]; j; j = j -> nxt) st.update(j -> x, -INF);
+			h_s[i -> x] = 0;
+		}
+	for (Vector *i = h_e[u]; i; i = i -> nxt)
+		if (!done[i -> x]) { getroot(i -> x); solve(root); }
+}
+
+int main(void) {
+	freopen("2545.in", "r", stdin);
+	freopen("2545.out", "w", stdout);
+	int Q, id = 0; scanf("%d", &Q);
+	cur_e = e; //memset(h_e, 0, sizeof h_e);
+	cur_q = q; //memset(h_q, 0, sizeof h_q);
+	memset(ans, -1, sizeof ans);
+	for (int i = 0; i < Q; i++) {
+		char request[2]; int p; scanf("%s%d", request, &p);
+		if (!strcmp(request, "B")) {
+			++id;
+			if (p == -1) {
+				cur_e -> x = Q + 1; cur_e -> nxt = h_e[id]; h_e[id] = cur_e++;
+				cur_e -> x = id; cur_e -> nxt = h_e[Q + 1]; h_e[Q + 1] = cur_e++;
+			} else {
+				cur_e -> x = p; cur_e -> nxt = h_e[id]; h_e[id] = cur_e++;
+				cur_e -> x = id; cur_e -> nxt = h_e[p]; h_e[p] = cur_e++;
+			}
+		}
+		if (!strcmp(request, "Q")) {
+			cur_q -> x = id; cur_q -> y = i; cur_q -> nxt = h_q[p]; h_q[p] = cur_q++;
+			ans[i] = 0;
+		}
+	}
+	getroot(Q + 1); //printf("%d\n", root);
+	st.build(1, id); solve(root);
+	for (int i = 0; i < Q; i++) if (ans[i] != -1) printf("%d\n", ans[i]);
+	return 0;
+}
+```
