@@ -1083,3 +1083,89 @@ int main(void) {
 	return 0;
 }
 ```
+
+#### $\text{#}2$
+
+预处理：为了方便计算将左开右闭区间转为闭区间。
+
+动态规划。
+
+首先显然应该去除完全被包含的区间，除去冗余状态，去掉之后不可能使结果变得更坏。
+
+状态的表述，如果直接记 $f[i][j]$ 为前 $i$ 个区间中去除 $j$ 个区间，会发现重复部分难以计算，需要适当增加限制。
+
+
+
+记 $f[i][j]$ 为前 $i$ 个区间中去除 $j$ 个区间，其中保留第 $i$ 个区间的最大覆盖长度。求得之后枚举最后 $1$ 个保留的区间即可得到答案。
+
+考虑状态转移，对上 $1$ 个保留的区间 $k$ 进行分类讨论，即区间 $(k, i)$ 都舍弃：
+
+- 在第 $i$ 个区间之前不保留任何区间，显然有 $f[i][j] = r[i] - l[i] + 1$
+
+- 上 $1$ 个保留的区间 $k$ 不与区间 $i$ 相交，则有 $f[i][j] = f[k][j - i + k + 1] + r[i] - l[i] +1$
+
+- 上 $1$ 个保留的区间 $k$ 与区间 $i$ 相交，则有 $f[i][j] = f[k][j - i +k + 1] + r[i] - r[k]$
+
+注意到枚举 $k$ 时应该保证第 $2$ 维 $j - i + k + 1$ 非负，因此不需要从 $0$ 至 $i - 1$ 枚举。
+
+
+
+时间复杂度 $O(NK^2)$。
+
+经过简单的常数优化即可通过。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <utility>
+
+#pragma GCC optimize ("O3")
+
+using namespace std;
+
+#define MAX(a,b) ((a)>(b)?(a):(b))
+
+typedef pair <int, int> pii;
+
+const int MAXN = 2e5;
+const int MAXK = 2e2;
+
+struct Interval {
+	int l, r;
+	bool operator < (const Interval &x) const { return l != x.l ? l < x.l : x.r < r; }
+} lifeguard[MAXN], useful[MAXN];
+
+//pii lifeguard[MAXN], useful[MAXN];
+//bool cmp(pii x, pii y) { return x.l != y.l ? x.l < y.l : y.r < x.r; }
+
+int len[MAXN], f[MAXN][MAXK];
+
+int main(void) {
+	freopen("2546.in", "r", stdin);
+	freopen("2546.out", "w", stdout);
+	int N, K; scanf("%d%d", &N, &K);
+	for (int i = 0; i < N; i++) { scanf("%d%d", &lifeguard[i].l, &lifeguard[i].r); --lifeguard[i].r; }
+	sort(lifeguard, lifeguard + N);
+	int rightmost = 0, M = 0;
+	for (int i = 0; i < N; i++)
+		if (rightmost < lifeguard[i].r) {
+			len[M] = lifeguard[i].r - lifeguard[i].l + 1; useful[M++] = lifeguard[i]; rightmost = lifeguard[i].r;
+		} else --K;
+	K = MAX(K, 0); if (M <= K) { puts("0"); return 0; }
+	for (int i = 0; i < M; i++) {
+		for (int j = 0; j <= min(i, K); j++) {
+			f[i][j] = len[i];
+			for (int k = MAX(i - j - 1, 0), t = j - i + k + 1; k < i; k++, t++)
+				if (useful[k].r < useful[i].l) f[i][j] = MAX(f[i][j], f[k][t] + len[i]);
+				else f[i][j] = MAX(f[i][j], f[k][t] + useful[i].r - useful[k].r);
+//			printf("%d ", f[i][j]);
+		}
+//		putchar('\n');
+	}
+	int ans = 0; for (int i = M - K - 1; i < M; i++) ans = MAX(ans, f[i][K - M + i + 1]); printf("%d\n", ans);
+	return 0;
+}
+```
