@@ -1169,3 +1169,274 @@ int main(void) {
 	return 0;
 }
 ```
+
+### $\text{#}8$
+
+#### $\text{T}1$
+
+考察找规律。
+
+观察样例，猜想答案均为 $2$ 的非负整数次幂。通过实际编程求解进 $1$ 步肯定了猜想。
+
+$n$ 的范围很大，因此复杂度为 $\log$ 级别或常数级别。
+
+通过小范围内列出 $n$ 的 $2$ 进制表示与对应的答案，发现所求即为 $2^k$，其中 $k$ 为 $n$ 的 $2$ 进制表示中 $1$ 的个数。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+
+using namespace std;
+
+int main(void) {
+	freopen("2547.in", "r", stdin);
+	freopen("2547.out", "w", stdout);
+	long long n;
+	scanf("%lld", &n);
+	int cnt = 0;
+	for (; n; n = n & (n - 1)) ++cnt;
+	printf("%lld\n", 1LL << cnt);
+	return 0;
+}
+```
+
+#### $\text{T}2$
+
+关键是发掘最终形态的回文序列与原序列之间的关系。
+
+考虑原序列中最左右 $2$ 端的数。若它们相等，则无需与旁边的数进行合并，考虑由原序列中第 $2$ 个数至倒数第 $2$ 个数组成的子问题即可。
+
+否则，$2$ 个数最终都会各自被合并到 $1$ 个新的数中，且 $2$ 个新数相等。由于被合并的数 $1$ 定相邻，我们只需从 $2$ 端不断向中间合并，每次将总和小的 $1$ 端推进，直至 $2$ 边得到的新数相等（求解子问题）或两端相遇（结束）。
+
+这是典型的 $\text{two-pointers}$ 做法，时间复杂度为 $O(n)$。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+
+using namespace std;
+
+const int MAXN = 2e6;
+
+int a[MAXN];
+
+int main(void) {
+	freopen("2548.in", "r", stdin);
+	freopen("2548.out", "w", stdout);
+	int n, ans = 0;
+	scanf("%d", &n);
+	for (int i = 1; i <= n; i++) scanf("%d", &a[i]);
+	for (int i = 1, j = n, si = a[1], sj = a[n]; i < j; )
+		if (si == sj) {
+			si = a[++i];
+			sj = a[--j];
+		} else if (si < sj) {
+			si += a[++i];
+			++ans;
+		} else {
+			sj += a[--j];
+			++ans;
+		}
+	printf("%d\n", ans);
+	return 0;
+}
+```
+
+#### $\text{T}3$
+
+$40%$：可以任意安排顺序。典型的田忌赛马问题。应用贪心策略，按照难度递增顺序考虑每个问题，在剩下的所有能解决问题中选能力最弱的。若没有人能解决当前问题，分配剩下的人当中能力最弱的。
+
+
+
+$100%$：先让所有人呆在各自的理想位置。假设我们从某个位置开始进行分配。
+
+考虑当前“能够自由支配”的人有哪些。显然，从出发开始到当前位置 $u$，设走了 $k$ 步，我们把 $1$ 路上经过的人都先收集起来，共有 $p$ 个。显然当且仅当 $k \le p$ 时，我们能够任意分配已有的人。这里“任意分配”的含义是指，对于其中的某个人 $i$，可以让他最终位于 $C[i]$ 至 $u$ 当中的任意位置，只需让之前的人占领中间的空位即可。
+
+我们试着找出某个位置破环成链，使得全程都存在可以任意支配的人，即 $k \le p$ 始终成立。
+
+这样的位置 $1$ 定存在。
+
+记 $w[i]$ 为 $C[j]=i$ 的 $j$ 数量， $sum[i]$ 为 $w[]$ 的前缀和，$q[i] = sum[i]-i$。
+
+这时，$q$ 的意义就是：从 $1$ 走到 $i$，还缺少空位的人数。$q$ 为正数时还有多余的人没有放置，$q$ 为负数时人不够，之前的位置还有空余。
+
+显然有 $q[n]=0$。所以我们如果把环拓宽 $2$ 倍，第 $2$ 遍的 $q$ 和第 $1$ 遍完全一样。
+
+
+
+对于所有 $1 \le x < y \le 2n$，$q[y] - q[x-1]$ 就是从 $x$ 走到 $y$ 还缺少空位的人数。
+
+那么我们选出所有 $q$ 中间所有的 $q[m]$，由于它是最小的，所以所有 $q[m]-q[x] \le 0$，也就是说，无论从哪里走到 $m$，都不会有人缺少空位，很定不会有人需要走过 $m$ 到 $m+1$ 的路。
+
+也就是说，我们可以把环从 $m$ 和 $m+1$ 之间断开，而不会产生影响。
+
+
+
+对于得到的 $1$ 条链的问题，动态地进行田忌赛马解决即可。其中关键部分是怎么找“当前自由人当中刚好能解决谜题的最弱的人”。可以用线段树或者平衡树实现。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <vector>
+#include <set>
+
+using namespace std;
+
+const int MAXN = 1e6;
+
+int C[MAXN], A[MAXN], B[MAXN], cnt[MAXN];
+vector <int> v[MAXN];
+set <int> s;
+
+int main(void) {
+	freopen("2549.in", "r", stdin);
+	freopen("2549.out", "w", stdout);
+	int n; scanf("%d", &n);
+	for (int i = 1; i <= n; i++) { scanf("%d", &C[i]); ++cnt[C[i]]; }
+	for (int i = 1; i <= n; i++) scanf("%d", &A[i]);
+	for (int i = 1; i <= n; i++) { scanf("%d", &B[i]); v[C[i]].push_back(B[i]); }
+	int m = 0, q = 0, least = 0;
+	for (int i = 1; i <= n; i++) {
+		q += cnt[i] - 1;
+		if (q < least) { least = q; m = i; } 
+	}
+	++m; if (n < m) m = 1; int ans = 0;
+//	printf("%d %d\n", n, m);
+	for (int i = m; ; ) {
+//		printf("i = %d\n", i);
+		for (int j = 0; j < (signed)v[i].size(); j++) {
+//			printf("j = %d\n", j);
+			s.insert(v[i].at(j));
+		}
+		set<int>::iterator it = s.lower_bound(A[i]);
+		if (it == s.end()) s.erase(s.begin());
+		else { ++ans; s.erase(it); }
+		++i; if (n < i) i = 1; if (i == m) break;
+	}
+	printf("%d\n", ans);
+	return 0;
+}
+```
+
+### $\text{#}9$
+
+#### $\text{T}1$
+
+按照题意，直接模拟判断即可。
+
+如果为了处理句子最后 $1$ 个单词时，末尾只允许标点符号和小写字母的出现，需要注意句中人名长度为 $1$ 的边界情况。
+
+```cpp
+#include <algorithm>
+#include <cctype>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+
+using namespace std;
+
+const int MAXL = 1e4;
+
+char s[MAXL];
+
+bool check(char last) {
+	if (!isupper(s[0])) return false;
+//	printf("%c %c\n", last, s[1]);
+	if (s[1] != '\0')
+		for (int i = 1; s[i + 1] != '\0'; i++)
+			if (!islower(s[i])) return false;
+	return s[1] == '\0' || islower(last) || last == '!' || last == '?' || last == '.';
+}
+
+int main(void) {
+	freopen("name.in", "r", stdin);
+	freopen("name.out", "w", stdout);
+	int N;
+	scanf("%d", &N);
+	for (int cnt = 0; ~scanf("%s", s); ) {
+		char last = s[strlen(s) - 1];
+//		putchar(last);
+		if (check(last)) ++cnt;
+//		printf("%d\n", cnt);
+		if (last == '!' || last == '?' || last == '.') {
+			printf("%d\n", cnt);
+			cnt = 0;
+		}
+	}
+	return 0;
+}
+```
+
+#### $\text{T}2$
+
+写出图的邻接矩阵。由于无向图的对称性，可以只看上 $3$ 角矩阵部分。目标矩阵是使所有值为 $1$。
+
+显然，假如对某个点多次操作，每 $2$ 次就会抵消回原有的状态。因此每个点最多被操作 $1$ 次。且点与点之间的操作顺序是没有关系的，因此只需考虑操作哪些点即可。
+
+考虑对某个点 $i$ 进行操作而产生的影响。体现在邻接矩阵上，就是第 $i$ 行和第 $i$ 列所有值取反。
+
+记第 $i$ 个点是否操作为 $x[i]$，值为 $0$ 或 $1$。对于原始邻接矩阵中的 $a[i][j]$，若其值为 $0$，即原来 $i$ 与 $j$ 之间没有边相连，那么要么操作点 $i$，要么操作点 $j$，即 $x[i]\mathrm{ xor }x[j]=1$，类似地，$a[i][j] = 1$，则有 $x[i]\mathrm{ xor }x[j]=0$。
+
+一般地，我们得到了 $n^2$ 条形如 $x[i]\mathrm{ xor }x[j]=a[i][j]\mathrm{ xor }1$ 的异或方程。
+
+
+
+自然地，第 $1$ 反应是解异或方程组，然而时间复杂度并不允许这样做。
+
+可以发现每条方程都有且仅有 $2$ 个未知数的系数为 $1$。所以我们只需维护未知数之间的异或关系，并检查是否有矛盾。可以使用维护传递关系的并查集实现。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+
+using namespace std;
+
+const int MAXN = 2e3;
+
+bool g[MAXN][MAXN];
+int f[MAXN << 1];
+
+inline int find(int r) {
+	return f[r] == r ? r : f[r] = find(f[r]);
+}
+
+bool ok(int n) {
+	for (int i = 1; i <= n; i++) f[i] = i;
+	for (int i = 1; i < n; i++)
+		for (int j = i + 1; j <= n; j++)
+			if (g[i][j]) f[find(i)] = find(j);
+	for (int i = 1; i < n; i++)
+		for (int j = i + 1; j <= n; j++)
+			if (!g[i][j] && find(i) == find(j)) return false;
+	return true;
+}
+
+int main(void) {
+	freopen("2551.in", "r", stdin);
+	freopen("2551.out", "w", stdout);
+	int n;
+	scanf("%d", &n);
+	int m;
+	scanf("%d", &m);
+	for (int i = 0; i < m; i++) {
+		int u, v;
+		scanf("%d%d", &u, &v);
+		g[min(u, v)][max(u, v)] = true;
+	}
+	puts(ok(n) ? "DA" : "NE");
+	return 0;
+}
+```
