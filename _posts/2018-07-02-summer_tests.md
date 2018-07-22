@@ -1440,3 +1440,91 @@ int main(void) {
 	return 0;
 }
 ```
+
+#### $\text{T}3$
+
+对于 $x, y$，考虑 $\min\{x \% y, y \% x\}$ 的另 $1$ 种表达。
+
+如果 $x < y$，则 $x \% y = x$，而 $y \% x < x$，因此最终取 $y \% x$；
+
+如果 $y < x$，则 $y \% x = y$，而 $x \% y < y$，因此最终去 $x \% y$。
+
+于是可以发现，$\min\{x \% y, y \% x\} = \max\{x, y} \% \min\{x, y\}$。
+
+
+
+为了方便，规定 $x < y$，$1$ 律从前面向后面连边。
+
+由于在完全图上求生成树，边的数量太多，需要去除冗余的边。
+
+根据定义，$y \% x = y - kx$。
+
+假如有另外 $1$ 个 $z$，使得 $kx \le y < z < (k+1) x$，那么显然 $x$ 连 $z$ 不如 $x$ 连 $y$，而且 $x$ 连 $z$ 也不如 $y$ 连 $z$，换句话说，$x$ 连 $z$ 这条边不可能出现在最小生成树上。
+
+因此对于每组 $(x, k)$，我们只需保留使 $y - kx$ 最小（且非负）的 $y$ 即可。
+
+
+
+这样产生边的数量为 $\frac{n}{1}+\frac{n}{2}+\frac{n}{3}+\ldots +\frac{n}{n}\approx n \lg⁡ n$。
+对这些边使用 $\text{Kruskal}$ 算法求解即可。
+
+实现上的细节见代码注释。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+#define MIN(x,y) ((x)<(y)?(x):(y))
+
+const int MAXN = 1e5 + 10;
+const int MAXA = 1e7 + 10;
+
+int A[MAXN], nxt[MAXA], f[MAXN];
+
+inline int find(int r) {
+	return f[r] == r ? r : f[r] = find(f[r]);
+}
+
+vector < pair<int, int> > e[MAXA];
+
+int main(void) {
+	freopen("constellation.in", "r", stdin);
+	freopen("constellation.out", "w", stdout);
+	int n;
+	scanf("%d", &n);
+	for (int i = 1; i <= n; i++) {
+		f[i] = i;
+		scanf("%d", &A[i]);
+	}
+	sort(A + 1, A + n + 1);
+	n = unique(A + 1, A + n + 1) - A - 1;
+	for (int i = 1, j = 1; j <= n; i++) {
+		nxt[i] = j; //找比 i 大的最近的 A[j]
+		if (i == A[j]) ++j;
+	}
+	for (int i = 1; i < n; i++)
+		if (A[i + 1] < (A[i] << 1)) e[A[i + 1] - A[i]].push_back(make_pair(i, i + 1)); //如果Ay<2Ax，由于最接近Ax的一倍的数就是Ax自己，这条边会漏掉。所以我们要加上每一条Ax+1<2Ax的边
+	for (int i = 1; i <= n; i++)
+		for (int j = A[i] << 1; j <= A[n]; j += A[i]) //j <= A[n], not n
+			if (nxt[j] != nxt[j + A[i]]) e[A[nxt[j]] - j].push_back(make_pair(i, nxt[j])); //只有 A[i] 的下 1 个倍数不对应同一个点时，我们才记录这条边
+	int ans = 0;
+	for (int i = 0, j = 1; i <= A[n] && j < n; i++) //i should start from 0!!
+	//由于边的数量接近 10^8，我们不能用快排。注意到边权最多 10^7，我们可以用桶排。
+		for (int k = 0; k < (signed)e[i].size(); k++) {
+			int fu = find(e[i].at(k).first), fv = find(e[i].at(k).second);
+			if (fu != fv) {
+				f[fu] = fv;
+				ans += i;
+				++j;
+			}
+		}
+	printf("%d\n", ans);
+	return 0;
+}
+```
