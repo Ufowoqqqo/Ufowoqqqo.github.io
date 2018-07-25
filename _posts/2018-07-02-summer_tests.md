@@ -1528,3 +1528,218 @@ int main(void) {
 	return 0;
 }
 ```
+
+### $\text{#}10$
+
+#### $\text{T}1$
+
+按照题意直接模拟即可，考察代码实现能力。
+
+注意到字符串的长度和数量都很小，可以直接暴力匹配，不需要使用高级数据结构，以免增加不必要的潜在错误。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+
+using namespace std;
+
+const int MAXN = 100;
+const int MAXL = 200;
+
+char station[MAXN][MAXL], cur[MAXL];
+bool v[MAXN];
+
+int main(void) {
+	freopen("2553.in", "r", stdin);
+	freopen("2553.out", "w", stdout);
+	int n;
+	scanf("%d", &n);
+	for (int i = 0; i < n; i++) scanf("%s", station[i]);
+	scanf("%s", cur);
+	int m = strlen(cur);
+	for (int i = 0; i < n; i++) {
+		bool matched = true;
+		for (int j = 0; j < m; j++)
+			if (station[i][j] != cur[j]) {
+				matched = false;
+				break;
+			}
+		if (matched) v[station[i][m]] = true;
+	}
+	printf("***");
+	for (char i = 'A'; i <= 'E'; i++) putchar(v[i] ? i : '*');
+	putchar('\n');
+	for (char i = 'F'; i <= 'M'; i++) putchar(v[i] ? i : '*');
+	putchar('\n');
+	for (char i = 'N'; i <= 'U'; i++) putchar(v[i] ? i : '*');
+	putchar('\n');
+	for (char i = 'V'; i <= 'Z'; i++) putchar(v[i] ? i : '*');
+	puts("***");
+	return 0;
+}
+```
+
+#### $\text{T}2$
+
+注意到 $B$ 最大只有 $10^7$，可以在 $O(n)$ 的时间内用线性筛求出 $B$ 以内每个数的约数和（先不减去自身）。
+
+具体地，注意到 $n$ 的约数和 $f(n)$ 是积性函数，可以额外维护每个数最小质因数的幂 $fir[i]$，把 $i$ 分成两个互质数的乘积，将他们的约数和相乘就得到了自己的约数和。
+
+再遍历 $[A, B]$ 范围内的每个数，按照题目定义求解计算即可。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+
+using namespace std;
+
+const int MAXN = 1e7 + 10;
+
+bool v[MAXN];
+int cnt, primes[MAXN / 10], fir[MAXN];
+
+long long f[MAXN];
+
+int main(void) {
+	freopen("2554.in", "r", stdin);
+	freopen("2554.out", "w", stdout);
+	int A, B;
+	scanf("%d%d", &A, &B);
+	for (int i = 2; i <= B; i++) {
+		if (!v[i]) {
+			primes[cnt++] = fir[i] = i;
+			f[i] = i + 1;
+		}
+		for (int j = 0; j < cnt; j++) {
+			int k = primes[j] * i;
+			if (B < k) break;
+			v[k] = true;
+			if (i % primes[j]) {
+				f[k] = f[i] * f[primes[j]];
+				fir[k] = primes[j];
+			} else {
+				fir[k] = fir[i] * primes[j];
+				if (fir[k] == k) f[k] = f[i] + k;
+				else f[k] = f[i / fir[i]] * f[fir[i] * primes[j]];
+			}
+		}
+	}
+	long long ans = 0;
+	for (int i = A; i <= B; i++) {
+		ans += abs(f[i] - (i << 1));
+//		printf("i = %d, ans = %lld\n", i, ans);
+//		printf("%x, ", abs(f[i] - (i << 1)));
+	}
+	printf("%lld\n", ans - (A == 1));
+	return 0;
+}
+```
+
+#### $\text{T}3$
+
+先来考虑所有 $l = 1$ 的特例，即询问 $[1, r]$ 内恰好出现 $2$ 次的数的个数。
+
+$1$ 种直观的想法是，在每个数第 $2$ 次出现的位置打上 $+1$ 标记。这样求 $[1,r]$ 的前缀和就得到了“至少出现 $2$ 次的数”的个数。
+
+根据容斥原理，现在需要减去的是 “至少出现 $3$ 次的数”的个数。类似地，我们在每个数第 $3$ 次出现的位置打上 $-1$ 标记。
+
+正确性可以通过分类讨论 $r$ 与数 $x$ 的关系得到证明：若 $r$ 在 $x$ 第 $2$ 次出现前，不产生贡献；若在 $x$ 第 $2$ 次出现及其后，而在第 $3$ 次出现前，$x$ 在前缀和中贡献为 1；若在第 $3$ 次出现及其后，在前缀和中贡献为 $1 - 1 = 0$。
+
+这就意味着当且仅当 $r$ 介于 $x$ 第 $2, 3$ 次出现之间（左闭右开）时，$x$ 会对 $[1, r]$ 的统计产生贡献。这与题意的要求是 $1$ 致的。
+
+
+
+对于普遍情况，我们需要动态地维护标记。
+
+在线解决询问不好处理，为了延续上面的思想，我们将操作离线，每次解决 $1$ 些 $l$ 相等的询问。
+
+按 $l$ 递减的顺序考虑询问。当 $l$ 每左移 $1$ 位，会且只会对新位置上数对应的标记产生影响。具体地，需要将旧的标记删除，并打上新的标记。
+
+
+
+离散化之后预处理出每个数下 $1$ 个与其相等数的出现位置 $nxt[i]$。
+
+标记的更改体现在前缀和上，就是对 $nxt[l]$ 处 $+1$，将 $nxt[nxt[l]]$ 处原有的 $+1$ 改为 $-1$（即给该位加上 $-2$），将 $nxt[nxt[nxt[l]]]$ 处原有的 $-1$ 消去（即给该位加上 $+1$）。
+
+
+
+对于单点修改，前（后）缀询问的问题，可以简单地使用 $\text{Fenwick Tree}$ 实现。
+
+时间复杂度为 $O(N\log N)$。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+const int MAXN = 1e6;
+const int MAXQ = 1e6;
+
+int n, a[MAXN], idx[MAXN], nxt[MAXN], p[MAXN];
+vector <int> v;
+pair <pair<int, int>, int> queries[MAXQ];
+int ans[MAXQ];
+
+int ft[MAXN];
+void add(int p, int v) {
+//	printf("add(%d, %d)\n", p, v);
+	for (int i = p; i <= n; i += (i & -i)) ft[i] += v;
+}
+int ask(int p) {
+//	printf("ask(%d)\n", p);
+	int s = 0;
+	for (int i = p; i; i -= (i & -i)) s += ft[i];
+	return s;
+}
+
+int main(void) {
+	freopen("2555.in", "r", stdin);
+	freopen("2555.out", "w", stdout);
+	int Q;
+	scanf("%d%d", &n, &Q);
+	for (int i = 1; i <= n; i++) {
+		scanf("%d", &a[i]);
+		v.push_back(a[i]);
+	}
+	sort(v.begin(), v.end());
+	v.erase(unique(v.begin(), v.end()), v.end());
+	int N = (signed)v.size();
+	for (int i = n; i; i--) {
+		idx[i] = lower_bound(v.begin(), v.end(), a[i]) - v.begin() + 1;
+		nxt[i] = p[idx[i]];
+		p[idx[i]] = i;
+	}
+	for (int i = 0; i < Q; i++) {
+		scanf("%d%d", &queries[i].first.first, &queries[i].first.second);
+		queries[i].second = i;
+	}
+	sort(queries, queries + Q, greater< pair<pair<int, int>, int> >());
+	for (int i = 0, j = n; i < Q; i++) {
+//		printf("i = %d\n", i);
+		for (; queries[i].first.first <= j; j--) {
+//			printf("j = %d\n", j);
+			if (nxt[j]) {
+				add(n - nxt[j] + 1, 1);
+				if (nxt[nxt[j]]) {
+					add(n - nxt[nxt[j]] + 1, -2);
+					if (nxt[nxt[nxt[j]]]) add(n - nxt[nxt[nxt[j]]] + 1, 1);
+				}
+			}
+		}
+		ans[queries[i].second] = ask(n - queries[i].first.first + 1) - ask(n - queries[i].first.second);
+	}
+	for (int i = 0; i < Q; i++) printf("%d\n", ans[i]);
+	return 0;
+}
+```
