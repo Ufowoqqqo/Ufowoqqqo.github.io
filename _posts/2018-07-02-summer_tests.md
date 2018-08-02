@@ -1743,3 +1743,102 @@ int main(void) {
 	return 0;
 }
 ```
+
+### $\text{#}11$
+
+#### $\text{T}1$
+
+典型的线性贪心。
+
+考虑所有相邻的城市。若距离不大于 $D$，则靠东的城市被感染时可以传染到靠西的城市；否则中间必须新建城市，为了最小化城市数目，又使得病毒能够传播，显然应该每隔 $D$ 单位距离就新建 $1$ 座城市。
+
+时间复杂度 $O(N)$。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+
+using namespace std;
+
+const int MAXN = 1e6;
+
+int a[MAXN];
+
+int main(void) {
+	freopen("2560.in", "r", stdin);
+	freopen("2560.out", "w", stdout);
+	int N, D; scanf("%d%d", &N, &D);
+	for (int i = 1; i <= N; i++) scanf("%d", &a[i]);
+	int ans = 0;
+	for (int i = N - 1, j = N; i; i--)
+		if (a[i]) { ans += (j - i - 1) / D; j = i; }
+	printf("%d\n", ans);
+	return 0;
+}
+```
+
+#### $\text{T}2$
+
+考虑对于每个人，设其能够打败 $x$ 个人，则显然可以通过安排，把这些比他弱的人分到 $1$ 起，使其连续获胜 $\lfloor\log_2(x + 1)\rfloor$ 轮，即可以进入 $N - \lfloor\log_2(x + 1)\rfloor$ 轮。
+
+而对于计算能力值不大于自己的人数，排个序就可以统计了。
+
+时间复杂度 $O(2^N\times N)$。
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+const int MAXN = 21;
+
+int A[1 << MAXN], B[1 << MAXN];
+vector <int> v;
+
+int M, ft[1 << MAXN];
+void add(int p) { for (int i = p; i <= M; i += (i & -i)) ++ft[i]; }
+int ask(int p) { int s = 0; for (int i = p; i; i -= (i & -i)) s += ft[i]; return s; }
+
+int scan() {
+	char c = getchar();	for (; !isdigit(c); c = getchar());
+	int num = 0; for (; isdigit(c); c = getchar()) num = (num << 3) + (num << 1) + c - '0'; return num;
+}
+
+int main(void) {
+	freopen("2561.in", "r", stdin);
+	freopen("2561.out", "w", stdout);
+	int N, tot; scanf("%d", &N); tot = 1 << N;
+	for (int i = 0; i < tot; i++) v.push_back(A[i] = scan());
+	sort(v.begin(), v.end()); v.erase(unique(v.begin(), v.end()), v.end()); M = (signed)v.size();
+	for (int i = 0; i < tot; i++) {
+		B[i] = lower_bound(v.begin(), v.end(), A[i]) - v.begin() + 1;
+//		printf("%d ", B[i]);
+	}
+	for (int i = 0; i < tot; i++) add(B[i]);
+	for (int i = 0; i < tot; i++) printf("%d ", N - (int)log2(ask(B[i])));
+	return 0;
+}
+```
+
+#### $\text{T}3$
+
+状态压缩动态规划。
+
+记 $f[S]$ 为将集合 $S$ 中各个字符串任意调整顺序建成 $\text{Trie}$ 树所需的最少结点数（忽略根结点），则所求即为 $f[2^n - 1] + 1$。
+
+状态转移考虑划分子集。
+
+将集合 $S$ 中分为子集 $s_1$ 和 $s_2$，使它们的并集为 $S$，交集为空。所建成 $\text{Trie}$ 树中，先假设各自独立建，即 $f[s_1] + f[s_2]$，再提取出 $S$ 中所有串的 $\text{LCP}$（只关心字母的数量，原先给定的排列顺序没有意义），即为公共结点，即 $f[S]=\min\{f[s_1]+f[s_2]-L\}$。
+
+注意到其中 $L$ 与子集无关，可以单独提出在 $O(2^n\times n\times 26)$ 的时间内预处理。
+
+子集的枚举可以通过不断减少 $2$ 进制最右边的 $1(\text{lowbit})$ 实现。所有集合的所有子集总数为 $\sum_{i=0}^n \mathrm{C}_n^i 2^i=\sum_{i=0}^n \mathrm{C}_n^i 2^i 1^{n-i}=(2+1)^n=3^n$ 。
