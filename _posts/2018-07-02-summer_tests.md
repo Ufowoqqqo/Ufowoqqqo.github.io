@@ -1841,4 +1841,66 @@ int main(void) {
 
 注意到其中 $L$ 与子集无关，可以单独提出在 $O(2^n\times n\times 26)$ 的时间内预处理。
 
-子集的枚举可以通过不断减少 $2$ 进制最右边的 $1(\text{lowbit})$ 实现。所有集合的所有子集总数为 $\sum_{i=0}^n \mathrm{C}_n^i 2^i=\sum_{i=0}^n \mathrm{C}_n^i 2^i 1^{n-i}=(2+1)^n=3^n$ 。
+子集的枚举可以通过不断减少 $2$ 进制最右边的 $1(\text{lowbit})$ 实现。所有集合的所有子集总数为 $\sum_{i=0}^n C_n^i 2^i=\sum_{i=0}^n C_n^i 2^i 1^{n-i}=(2+1)^n=3^n$ 。
+
+```cpp
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+
+const int MAXN = 17;
+const int MAXL = 2e5;
+const int INF = 1e9 + 1;
+
+char s[MAXN][MAXL];
+int N, cnt[MAXN][256], tmp[256];
+
+int getPre(int cur) {
+	memset(tmp, 0x3f, sizeof tmp);
+	for (int i = 0; i < N; i++)
+		if (cur & (1 << i))
+			for (char j = 'a'; j <= 'z'; j++)
+				tmp[j] = std::min(tmp[j], cnt[i][j]);
+	int res = 0;
+	for (char i = 'a'; i <= 'z'; i++)
+		res += tmp[i];
+	return res;
+}
+
+int f[1 << MAXN];
+
+int main(void) {
+	freopen("2562.in", "r", stdin);
+	freopen("2562.out", "w", stdout);
+
+	scanf("%d", &N);
+	for (int i = 0; i < N; i++) {
+		scanf("%s", s[i]);
+		for (int j = 0; s[i][j] != '\0'; j++)
+			++cnt[i][ s[i][j] ];
+	}
+
+	int lim = 1 << N;
+	for (int i = 1; i < lim; i <<= 1) {
+		f[i] = getPre(i);
+//		printf("f[%d] = %d\n", i, f[i]);
+	}
+
+	for (int i = 3; i < lim; i++)
+		if (!f[i]) {
+			f[i] = INF;
+			for (int j = (i - 1) & i; j; j = (j - 1) & i) {
+//				printf("i = %d, j = %d, i ^ j = %d\n", i, j, i ^ j);
+				f[i] = std::min(f[i], f[j] + f[i ^ j]);
+			}
+			f[i] -= getPre(i);
+//			printf("f[%d] = %d\n", i, f[i]);
+		}
+
+	printf("%d\n", f[lim - 1] + 1);
+
+	return 0;
+}
+```
