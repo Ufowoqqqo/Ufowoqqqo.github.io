@@ -1904,3 +1904,562 @@ int main(void) {
 	return 0;
 }
 ```
+
+### $\text{#}12$
+
+#### $\text{T}1$
+
+> 给出 $1$ 棵树，有 $n$ 个点，每 $1$ 个点有点权。
+>
+> 在 $1$ 条路径上，第 $i$ 个点要支付 $i$ 倍点权的代价。
+>
+> 每次询问 $1$ 条路径，问该路径上每个点的代价之和。
+
+考虑线性的简化问题，求 $\sum_{i=l}^r(i-l+1)a_i$。
+
+原式化为 $\sum_{i=l}^ri\times a_i-(l-1)\sum_{i=l}^ra_i$。
+
+由于没有任何修改，直接用前缀和分别维护 $\sum i\times a_i$ 和 $\sum a_i$ 即可求解。
+
+---
+
+但将问题转化到树上之后，就涉及到拼接不同段答案的问题。因此需要考虑如何用线段树维护上述内容。
+
+也就是说，对于线段树上某个代表区间 $[l, r]$ 的 结点 $u$，都把它看作 $1$ 个子问题去求解。
+
+令 $m=\lfloor\frac{l+r}{2}\rfloor$，假设已经算出了左右子区间 $[l,m]$ 和 $(m, r]$ 的答案，利用它们来算出当前区间的答案。
+
+考虑 $\sum_{i=l}^r(i-l+1)a_i$ 与 $\sum_{i=l}^m(i-l+1)a_i$ 和 $\sum_{i=m+1}^r(i-m)a_i$ 之间的关系。
+
+容易发现左子区间的答案可以直接拿来用，右子区间中各点的系数都恰好少了 $m-l+1$。
+
+即 $\sum_{i=l}^r(i-l+1)a_i=\sum_{i=l}^m(i-l+1)a_i+\sum_{i=m+1}^r(i-m)a_i+(m-l+1)\sum_{i=m+1}^ra_i$。
+
+因此对于每个结点需要维护的有 $\sum_{i=l}^ra_i$ 和 $\sum_{i=l}^r(i-l+1)a_i$。
+
+---
+
+回到原题。对于树上不改变形态的路径相关问题，很自然地想到树链剖分。
+
+注意到本题的特殊之处在于所求不满足交换律，因此求解时不能任意交换 $S$ 和 $T$。
+
+在给树上结点标号时，树上每条链都满足深度小的结点编号小于深度大的结点编号，即 $T$ 侧维护的信息方向与所求 $1$ 致，但 $S$ 侧则恰好相反。
+
+考虑将求得的 $\sum_{i=l}^r(i-l+1)a_i$ 转化为 $\sum_{i=l}^r(r-i+1)a_i$。
+
+即将 $\sum_{i=l}^ri\times a_i-l\sum_{i=l}^ra_i+\sum_{i=l}^ra_i$ 转化为 $r\sum_{i=l}^ra_i-\sum_{i=l}^ri\times a_i+\sum_{i=l}^ra_i$。
+
+对左式乘上 $-1$，得 $l\sum_{i=1}^ra_i-\sum_{i=l}^ri\times a_i-\sum_{i=l}^ra_i$。
+
+加上 $(r-l)\sum_{i=l}^ra_i$，得 $r\sum_{i=l}^ra_i-\sum_{i=l}^ri\times a_i-\sum_{i=l}^ra_i$。
+
+最后再加上 $2\sum_{i=l}^ra_i$ 即可。
+
+---
+
+本题除了推公式稍显繁琐，其余的都是常规的树剖操作，此处不再赘述。
+
+时间复杂度 $O(Q\log^2n)$。
+
+```cpp
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+const int MAXN = 1e6;
+
+std::vector <int> e[MAXN];
+
+int dep[MAXN], fa[MAXN], son[MAXN], sz[MAXN];
+
+void dfs1(int u, int p) {
+	dep[u] = dep[p] + 1, fa[u] = p, son[u] = -1, sz[u] = 1;
+	for (int i = 0; i < (signed)e[u].size(); i++)
+		if (e[u].at(i) != p) {
+			dfs1(e[u].at(i), u);
+			sz[u] += sz[e[u].at(i)];
+			if (son[u] == -1 || sz[son[u]] < sz[e[u].at(i)]) son[u] = e[u].at(i);
+		}
+}
+
+int n;
+
+struct FenwickTree {
+	long long v[MAXN];
+	FenwickTree() {
+		memset(v, 0, sizeof v);
+	}
+
+	inline int lowBit(int x) {
+		return x & -x;
+	}
+
+	void add(int p, long long x) {
+		for (int i = p; i <= n; i += lowBit(i))
+			v[i] += x;
+	}
+
+	long long ask(int p) {
+		long long s = 0;
+		for (int i = p; i; i -= lowBit(i))
+			s += v[i];
+		return s;
+	}
+} ft[2];
+
+long long A[MAXN];
+
+int top[MAXN], w[MAXN], clk;
+
+void dfs2(int u) {
+	if (son[u] != -1) {
+		w[son[u]] = ++clk, top[son[u]] = top[u];
+		ft[0].add(w[son[u]], A[son[u]]);
+		ft[1].add(w[son[u]], (long long)w[son[u]] * A[son[u]]);
+		dfs2(son[u]);
+	}
+	for (int i = 0; i < (signed)e[u].size(); i++)
+		if (e[u].at(i) != fa[u] && e[u].at(i) != son[u]) {
+			w[e[u].at(i)] = ++clk, top[e[u].at(i)] = e[u].at(i);
+			ft[0].add(w[e[u].at(i)], A[e[u].at(i)]);
+			ft[1].add(w[e[u].at(i)], (long long)w[e[u].at(i)] * A[e[u].at(i)]);
+			dfs2(e[u].at(i));
+		}
+}
+
+int calc(int u, int v) {
+	int s = 0;
+	for (; top[u] != top[v]; u = fa[top[u]]) {
+		if (dep[top[u]] < dep[top[v]]) std::swap(u, v);
+		s += dep[u] - dep[top[u]] + 1;
+	}
+	if (dep[u] < dep[v]) std::swap(u, v);
+	s += dep[u] - dep[v] + 1;
+	return s;
+}
+
+long long query(int u, int v) {
+	long long s = 0;
+	int uStep = 1, vStep = calc(u, v), curStep;
+	for (; top[u] != top[v]; )
+		if (dep[top[u]] < dep[top[v]]) {
+			curStep = dep[v] - dep[top[v]] + 1;
+//			printf("curStep = %d\n", curStep);
+//			printf("%lld\n", ft[1].ask(w[v]) - ft[1].ask(w[top[v]] - 1));
+			s += (ft[1].ask(w[v]) - ft[1].ask(w[top[v]] - 1)) + (long long)(vStep - w[v]) * (ft[0].ask(w[v]) - ft[0].ask(w[top[v]] - 1));
+//			printf("(%d, %d), s = %lld\n", top[v], v, s);
+			vStep -= curStep, v = fa[top[v]];
+		} else {
+			curStep = dep[u] - dep[top[u]] + 1;
+			s += (long long)(uStep + w[u]) * (ft[0].ask(w[u]) - ft[0].ask(w[top[u]] - 1)) - (ft[1].ask(w[u]) - ft[1].ask(w[top[u]] - 1));
+//			printf("(%d, %d), s = %lld\n", u, top[u], s);
+			uStep += curStep, u = fa[top[u]];
+		}
+//	printf("u = %d, v = %d\n", u, v);
+	if (dep[u] < dep[v]) {
+		curStep = dep[v] - dep[u] + 1;
+//		printf("curStep = %d\n", curStep);
+		s += (ft[1].ask(w[v]) - ft[1].ask(w[u] - 1)) + (long long)(vStep - w[v]) * (ft[0].ask(w[v]) - ft[0].ask(w[u] - 1));
+	} else {
+		curStep = dep[u] - dep[v] + 1;
+//		printf("curStep = %d\n", curStep);
+//		printf("%lld\n", (uStep + w[u]) * (ft[0].ask(w[u]) - ft[0].ask(w[v] - 1)));
+		s += (long long)(uStep + w[u]) * (ft[0].ask(w[u]) - ft[0].ask(w[v] - 1)) - (ft[1].ask(w[u]) - ft[1].ask(w[v] - 1));
+	}
+	return s;
+}
+
+int main(void) {
+	freopen("2577.in", "r", stdin);
+	freopen("2577.out", "w", stdout);
+
+	int Q;
+	scanf("%d%d", &n, &Q);
+	for (int i = 1; i <= n; i++)
+		scanf("%lld", &A[i]);
+	for (int i = 1; i < n; i++) {
+		int a, b;
+		scanf("%d%d", &a, &b);
+		e[a].push_back(b), e[b].push_back(a);
+	}
+
+	dfs1(1, 0);
+	son[0] = 1;
+	dfs2(0);
+
+//	for (int i = 1; i <= n; i++)
+//		printf("%d ", w[i]);
+//	putchar('\n');
+
+	for (int i = 0; i < Q; i++) {
+		int S, T;
+		scanf("%d%d", &S, &T);
+		printf("%lld\n", query(S, T));
+	}
+	return 0;
+}
+```
+
+
+
+#### $\text{T}2$
+
+> 有 $n$ 个数，每个数在 $10^5$ 范围内。
+>
+> 要求维护 $2$ 种操作：
+>
+> - 区间求和，再把区间内每个数 $A_i$ 变成 $\varphi(A_i)$；
+> - 区间修改，把区间内所有数变成同 $1$ 个数。
+
+首先提供 $1$ 种非标准解法，实际测试中可以通过所有的测试数据。
+
+考虑用线段树维护。注意到某个数不断对自身求 $\varphi$，经过不超过 $\log n$ 次就会变成 $1$。证明见[此](https://ufowoqqqo.github.io/2018/07/21/Linear_sieve_and_Euler_function/#%E9%99%8D%E5%B9%82)。
+
+假设没有 `set` 操作，则每次可以暴力递归到底层进行修改；特别地，中途发现当前区间内全都为 $1$（可以通过维护区间最大值简单地实现）时，没有继续修改的必要，可以直接返回。
+
+总修改次数为 $O(n\log n)$。
+
+对于 `set` 操作，仍然像常规线段树 $1$ 样使用 `lazy-tag` 维护即可。在区间置为 $\varphi$ 的过程中，若当前区间被整段重置过，则将标记置为其 $\varphi$ 之后维护对应信息并返回即可。
+
+```cpp
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+//#include <ctime>
+#include <algorithm>
+#include <iostream>
+
+const int MAXN = 1e6;
+const int MAXV = 1e5;
+
+long long a[MAXN], phi[MAXN];
+int primes[MAXN], cnt;
+
+struct SegmentTree {
+	struct Node {
+		Node *ch[2];
+		long long v, tag;
+		int l, r, m;
+		Node(int x, int y) : v(0LL), tag(0LL), l(x), r(y), m(x + y >> 1) {
+			ch[0] = ch[1] = NULL;
+		}
+
+		void pushDown() {
+			if (tag) {
+				ch[0]->v = tag * (long long)(ch[0]->r - ch[0]->l + 1), ch[0]->tag = tag;
+				ch[1]->v = tag * (long long)(ch[1]->r - ch[1]->l + 1), ch[1]->tag = tag;
+				tag = 0LL;
+			}
+		}
+
+		void maintain() {
+			v = ch[0]->v + ch[1]->v;
+		}
+	} *root;
+
+	SegmentTree() : root(NULL) {}
+
+	void build(Node *&u, int l, int r) {
+		u = new Node(l, r);
+		if (l == r) u->v = a[l];
+		else {
+			build(u->ch[0], l, u->m);
+			build(u->ch[1], u->m + 1, r);
+			u->maintain();
+		}
+	}
+
+	long long query(Node *u, int l, int r) {
+		if (r < u->l || u->r < l) return 0LL;
+		if (l <= u->l && u->r <= r) return u->v;
+		u->pushDown();
+		return query(u->ch[0], l, r) + query(u->ch[1], l, r);
+	}
+
+	void updatePhi(Node *&u, int l, int r) {
+		if (r < u->l || u->r < l) return;
+		if (l <= u->l && u->r <= r && u->tag) {
+			u->tag = phi[u->tag];
+			u->v = u->tag * (long long)(u->r - u->l + 1);
+			return;
+		}
+		if (u->l + u->v == u->r + 1) return;
+		if (u->l == u->r) {
+			u->v = phi[u->v];
+			return;
+		}
+		u->pushDown();
+		updatePhi(u->ch[0], l, r);
+		updatePhi(u->ch[1], l, r);
+		u->maintain();
+	}
+
+	void updateSet(Node *&u, int l, int r, long long v) {
+		if (r < u->l || u->r < l) return;
+		if (l <= u->l && u->r <= r) {
+			u->v = v * (long long)(u->r - u->l + 1);
+			u->tag = v;
+			return;
+		}
+		u->pushDown();
+		updateSet(u->ch[0], l, r, v);
+		updateSet(u->ch[1], l, r, v);
+		u->maintain();
+	}
+} st;
+
+int main(void) {
+//	int startTime = clock();
+	freopen("2578.in", "r", stdin);
+	freopen("2578.out", "w", stdout);
+
+	phi[1] = 1;
+	for (int i = 2; i <= MAXV; i++) {
+		if (!phi[i]) {
+			primes[cnt++] = i;
+			phi[i] = i - 1;
+		}
+		for (int j = 0; j < cnt; j++) {
+			int k = i * primes[j];
+			if (MAXV < k) break;
+			if (i % primes[j]) phi[k] = phi[i] * phi[primes[j]];
+			else {
+				phi[k] = phi[i] * primes[j];
+				break;
+			}
+		}
+	}
+
+	int n, Q;
+	scanf("%d%d", &n, &Q);
+	for (int i = 1; i <= n; i++)
+		scanf("%lld", &a[i]);
+	st.build(st.root, 1, n);
+
+	for (int i = 0; i < Q; i++) {
+		int op, L, R;
+		scanf("%d%d%d", &op, &L, &R);
+		if (!op) {
+			printf("%lld\n", st.query(st.root, L, R));
+			st.updatePhi(st.root, L, R);
+		}
+		if (op == 1) {
+			long long V;
+			scanf("%lld", &V);
+			st.updateSet(st.root, L, R, V);
+		}
+	}
+
+//	printf("time used = %d millisecond(s)\n", clock() - startTime);
+	return 0;
+}
+```
+
+---
+
+正解是 $\text{Splay}$。
+
+之前的思路中，利用“全为 $1$ 的区间没有修改意义”这点非常重要。
+
+考虑把区间设置的整个区间看成 $1$ 个整体来操作，那么整体只会被修改 $\log n$ 次，而且每次修改可以算出总和。
+
+具体地，$\text{Splay}$ 中每个结点代表 $1$ 个值全部相同的区间。需要维护的值有**子树中所有区间**的长度之和及**子树中所有区间**的数的总和。
+
+这样将区间置 $\varphi$ 时，分离出对应的区间，再遍历得到的树即可。把处理完后值为 $1$ 的区间记录下来并删除。对于每次询问，询问区间的长度减去得到的由对应区间内不为 $1$ 的数组成的树的大小即为 $1$ 的数量。
+
+---
+
+考虑实现。
+
+区间的分离可以用[非旋转式平衡树](https://ufowoqqqo.github.io/2018/05/26/non_rotation_treap/)中的`split`操作实现。细节此处不再赘述。
+
+对于区间置 $\varphi$ 之后的删除全 $1$ 区间问题，可以把遍历到的全 $1$ 区间记录下来，并逐个删除。
+
+考虑到每个点只会被删 $1$ 次，总时间复杂度为 $O(n\log n)$。
+
+
+
+#### $\text{T}3$
+
+> 给出 $1$ 棵 $n$ 个点的树，$1$ 开始边权都为 $1$。$n\le 10^5$
+>
+> 有 $3$ 种操作。
+>
+> 路径修改，全部边权 $+1$。
+>
+> 取消某 $1$ 次修改。
+>
+> 询问 $1$ 条路径上有多少边权为 $1$ 的边。
+
+考虑线性的简化问题。
+
+用特殊的删除标记即可解决。
+
+维护当前区间被整体 $+1$ 的次数。当且仅当次数为 $0$ 时，当前区间没有被删除。
+
+删除标记不下传，这样可以保证取消操作的复杂度也是 $O(\log n)$。事实上也没有必要下传，因为询问时遇到删除标记直接返回即可。
+
+再套上树剖即可。
+
+> 这题是坠简单的，我的线段树却打错爆 $0$ 了，好菜啊 $\text{:(}$
+
+```cpp
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+const int MAXN = 1e6;
+const int MAXQ = 1e6;
+
+std::vector <int> e[MAXN];
+
+int dep[MAXN], fa[MAXN], son[MAXN], sz[MAXN];
+
+void dfs1(int u, int p) {
+	dep[u] = dep[p] + 1, fa[u] = p, son[u] = -1, sz[u] = 1;
+	for (int i = 0; i < (signed)e[u].size(); i++)
+		if (e[u].at(i) != p) {
+			dfs1(e[u].at(i), u);
+			sz[u] += sz[e[u].at(i)];
+			if (son[u] == -1 || sz[son[u]] < sz[e[u].at(i)]) son[u] = e[u].at(i);
+		}
+}
+
+struct SegmentTree {
+	struct Node {
+		Node *ch[2];
+		int v, times;
+		int l, r, m;
+		Node(int x, int y) : v(0), times(0), l(x), r(y), m(x + y >> 1) {
+			ch[0] = ch[1] = NULL;
+		}
+
+		void maintain() {
+			if (ch[0] && ch[1]) v = ch[0]->v + ch[1]->v; else v = 0;
+		}
+	} *root;
+
+	void build(Node *&u, int l, int r) {
+		u = new Node(l, r);
+		if (l < r) {
+			build(u->ch[0], l, u->m);
+			build(u->ch[1], u->m + 1, r);
+		}
+	}
+
+	void update(Node *&u, int l, int r, int v) {
+//		printf("update(%d, %d), (%d, %d)\n", u->l, u->r, l, r);
+		if (r < u->l || u->r < l) return;
+		if (l <= u->l && u->r <= r) {
+			u->times += v;
+			if (u->times) u->v = u->r - u->l + 1; else u->maintain();
+//			printf("updated, node[%d, %d] v = %d, times = %d\n", u->l, u->r, u->v, u->times);
+			return;
+		}
+		update(u->ch[0], l, r, v);
+		update(u->ch[1], l, r, v);
+		if (!u->times) u->maintain();
+	}
+
+	int query(Node *u, int l, int r) {
+//		printf("query(%d, %d), (%d, %d)\n", u->l, u->r, l, r);
+		if (l <= u->l && u->r <= r) {
+//			printf("queried, node[%d, %d] v = %d, times = %d\n", u->l, u->r, u->v, u->times);
+			return u->v;
+		}
+		if (u->l <= l && r <= u->r && u->times) return r - l + 1;
+		if (l <= u->m && r <= u->m) return query(u->ch[0], l, r);
+		else if (u->m < l && u->m < r) return query(u->ch[1], l, r);
+		return query(u->ch[0], l, u->m) + query(u->ch[1], u->m + 1, r);
+	}
+} st;
+
+int top[MAXN], w[MAXN], clk;
+
+void dfs2(int u) {
+	if (son[u] != -1) {
+		w[son[u]] = ++clk, top[son[u]] = top[u];
+		dfs2(son[u]);
+	}
+	for (int i = 0; i < (signed)e[u].size(); i++)
+		if (e[u].at(i) != fa[u] && e[u].at(i) != son[u]) {
+			w[e[u].at(i)] = ++clk, top[e[u].at(i)] = e[u].at(i);
+			dfs2(e[u].at(i));
+		}
+}
+
+void add(int u, int v, int x) {
+//	if (u == v) return;
+	for (; top[u] != top[v]; u = fa[top[u]]) {
+		if (dep[top[u]] < dep[top[v]]) std::swap(u, v);
+//		printf("top[u] = %d, u = %d, add(%d, %d)\n", top[u], u, w[top[u]], w[u]);
+		st.update(st.root, w[top[u]], w[u], x);
+	}
+	if (dep[u] < dep[v]) std::swap(u, v);
+//	printf("v = %d, u = %d, add(%d, %d)\n", v, u, w[v] + 1, w[u]);
+	if (w[v] != w[u]) st.update(st.root, w[v] + 1, w[u], x);
+}
+
+int solve(int u, int v) {
+	int s = 0;
+	for (; top[u] != top[v]; u = fa[top[u]]) {
+		if (dep[top[u]] < dep[top[v]]) std::swap(u, v);
+		s += dep[u] - dep[top[u]] + 1 - st.query(st.root, w[top[u]], w[u]);
+	}
+	if (dep[u] < dep[v]) std::swap(u, v);
+	if (w[v] != w[u]) s += dep[u] - dep[v] - st.query(st.root, w[v] + 1, w[u]);
+	return s;
+}
+
+std::pair<int, int> paths[MAXQ];
+
+int main(void) {
+	freopen("2579.in", "r", stdin);
+	freopen("2579.out", "w", stdout);
+
+	int n, Q;
+	scanf("%d%d", &n, &Q);
+	for (int i = 1; i < n; i++) {
+		int x, y;
+		scanf("%d%d", &x, &y);
+		e[x].push_back(y), e[y].push_back(x);
+	}
+	dfs1(1, 0);
+	son[0] = 1;
+	st.build(st.root, 1, n);
+	dfs2(0);
+
+//	for (int i = 1; i <= n; i++)
+//		printf("%d ", w[i]);
+//	putchar('\n');
+
+	int cntPaths = 0;
+	for (int i = 0; i < Q; i++) {
+		int op;
+		scanf("%d", &op);
+		if (!op) {
+			++cntPaths;
+			scanf("%d%d", &paths[cntPaths].first, &paths[cntPaths].second);
+			add(paths[cntPaths].first, paths[cntPaths].second, 1);
+		}
+		if (op == 1) {
+			int p;
+			scanf("%d", &p);
+			add(paths[p].first, paths[p].second, -1);
+		}
+		if (op == 2) {
+			int x, y;
+			scanf("%d%d", &x, &y);
+			printf("%d\n", solve(x, y));
+		}
+//		putchar('\n');
+	}
+	return 0;
+}
+```
