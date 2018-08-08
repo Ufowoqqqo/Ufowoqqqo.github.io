@@ -2463,3 +2463,289 @@ int main(void) {
 	return 0;
 }
 ```
+
+### $\text{#}13$
+
+#### $\text{T}1$
+
+直接枚举每 $1$ 个串的每 $1$ 个位置匹配即可。
+
+时间复杂度 $O(nmQ)$。
+
+```cpp
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <algorithm>
+#include <iostream>
+#define N 1020
+#define M 1020
+using namespace std;
+
+int text[N][M], pattern[M];
+
+int Scan(void)
+{
+	char c;
+	int o, k;
+
+	for(o = 0, k = 1; (c = getchar()) != EOF && !isdigit(c) && c != '-'; )
+		;
+	if(c == '-')
+	{
+		k = -1;
+		c = getchar();
+	}
+	do
+		o = (o << 3) + (o << 1) + c - '0';
+	while((c = getchar()) != EOF && isdigit(c));
+
+	return o * k;
+}
+
+bool match(int *x, int *y, int length)
+{
+	int index;
+
+	for(index = 0; index < length; index ++)
+		if(x[index] != y[index] && y[index] != -1)
+			return false;
+
+	return true;
+}
+
+int main(void)
+{
+	int n, m, Q, answer;
+	int index, j;
+
+	freopen("2596.in", "r", stdin);
+	freopen("2596.out", "w", stdout);
+
+	n = Scan(), m = Scan();
+	for(index = 0; index < n; index ++)
+		for(j = 0; j < m; j ++)
+			text[index][j] = Scan();
+	Q = Scan();
+	for(index = 0; index < Q; index ++)
+	{
+		for(j = 0; j < m; j ++)
+			pattern[j] = Scan();
+		for(j = 0, answer = 0; j < n; j ++)
+			answer += match(text[j], pattern, m);
+		printf("%d\n", answer);
+	}
+
+	return 0;
+}
+```
+
+#### $\text{T}2$
+
+题解见[此](https://ufowoqqqo.github.io/2018/02/02/con261/#textt1-deda)。
+
+```cpp
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <algorithm>
+#include <iostream>
+#define INFINITY 1000000001
+using namespace std;
+
+class SegmentTree
+{
+public:
+	class Node
+	{
+	public:
+		Node *child[2];
+		int minimumValue;
+		int left, right, middle;
+		Node(int x, int y) : minimumValue(INFINITY), left(x), right(y), middle((x + y )>> 1)
+		{
+			child[0] = child[1] = NULL;
+
+			return;
+		}
+
+		void maintain(void)
+		{
+			minimumValue = min(child[0]->minimumValue, child[1]->minimumValue);
+
+			return;
+		}
+	} *root;
+
+	SegmentTree(void) : root(NULL)
+	{
+		return;
+	}
+
+	void build(Node *¤t, int left, int right)
+	{
+		current = new Node(left, right);
+		if(left < right)
+		{
+			build(current->child[0], left               , current->middle);
+			build(current->child[1], current->middle + 1, right          );
+		}
+
+		return;
+	}
+
+	void update(Node *¤t, int position, int value)
+	{
+		if(current->left == current->right)
+		{
+			current->minimumValue = min(current->minimumValue, value);
+
+			return;
+		}
+		update(current->child[current->middle < position], position, value);
+		current->maintain();
+
+		return;
+	}
+
+	int query(Node *current, int position, int value)
+	{
+		int temp;
+
+		if(value < current->minimumValue || current->right < position)
+			return -1;
+		if(current->left == current->right)
+			return current->left;
+		if(current->child[0]->minimumValue <= value)
+		{
+			temp = query(current->child[0], position, value);
+			if(temp != -1)
+				return temp;
+		}
+
+		return query(current->child[1], position, value);
+	}
+} ghaSTLcon;
+
+int main(void)
+{
+	int N, Q, XY, AB;
+	int index;
+	char op[2];
+
+	freopen("2597.in", "r", stdin);
+	freopen("2597.out", "w", stdout);
+
+	scanf("%d %d", &N, &Q);
+	ghaSTLcon.build(ghaSTLcon.root, 1, N);
+	for(index = 0; index < Q; index ++)
+	{
+		scanf("%s %d %d", op, &XY, &AB);
+		if(!strcmp(op, "M"))
+			ghaSTLcon.update(ghaSTLcon.root, AB, XY);
+		if(!strcmp(op, "D"))
+			printf("%d\n", ghaSTLcon.query(ghaSTLcon.root, AB, XY));
+	}
+	return 0;
+}
+```
+
+#### $\text{T}3$
+
+设 $E[i]$ 为已经匹配了前 $i$ 个数字后， 匹配完整个串还需要的期望生成数字数。
+
+边界条件是显然的。对于长度为 $k$ 的前缀，有 $E[k] = 0$。
+
+转移时，由于在当前状态下在 $n$ 种可能的分支中有且只有 $1$ 种能够使得匹配位数增加 $1$ 位，其余都不会使已有的匹配结果变得更优。
+
+即 $E[i]=\frac{E[i+1]}{n}+\frac{\sum E[j]}{n}+1$，其中 $j$ 是其余的 $(n - 1)$ 种分支到达的新匹配位置。
+
+先忽略 $j$ 的求解方法，假设已经通过某种手段求得 $(n - 1)$ 个分支对应的 $j$。
+
+---
+
+注意到上面的式子中，$E[i]$ 既与前面有关，又与后面有关，这使问题看似复杂。
+
+但后面永远是 $i + 1$，不妨稍作变形，得到 $E[i+1]=n\times E[i]-\sum E[j] -n$。
+
+这样就能够从前往后递推了。
+
+---
+
+然后我们就发现，已知的边界与递推的方向恰好是相反的。
+
+考虑逆推。
+
+设 $E[0] = x$，最终可以得到 $E[k] = ax+b = 0$，即 $x = -\frac{b}{a}$。
+
+通过简单的数学归纳法不难得到，所有 $E[i]$ 中 $x$ 的系数均为 $1$，因此只需记录常数项即可。
+
+---
+
+最后考虑“当前情况下再填上某个字符转移到的位置”如何求得。
+
+可以使用 $\text{KMP}$ 算法，但是由于每位有多种失配方式，会使复杂度高达 $O(M^2)$。
+
+注意到当前位置与失配位置有 $1$ 部分前缀相等，下 $1$ 位的结果可以继承。也就是构建只有 $1$ 个串的 $\text{AC}$ 自动机即可。
+
+```cpp
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <algorithm>
+#include <iostream>
+#define MAXN 120
+#define MAXM 1000020
+#define ghaSTLcon 1000000007LL
+using namespace std;
+
+int Scan(void)
+{
+	char c;
+	int o;
+
+	for(o = 0; (c = getchar()) != EOF && !isdigit(c); )
+		;
+	do
+		o = (o << 3) + (o << 1) + c - '0';
+	while((c = getchar()) != EOF && isdigit(c));
+
+	return o;
+}
+
+int a[MAXM], next[MAXM][MAXN];
+long long E[MAXM];
+
+int main(void) //2598.cpp
+{
+	int N, M;
+	int index, j, k;
+
+	freopen("2598.in" , "r", stdin);
+	freopen("2598.out", "w", stdout);
+
+	N = Scan();
+	M = Scan();
+	for(index = 1; index <= M; index ++)
+		a[index] = Scan();
+
+	for(next[0][a[1]] = 1, index = 1, j = 0; index < M; index ++)
+	{
+		for(k = 1; k <= N; k ++)
+			next[index][k] = next[j][k];
+		next[index][a[index + 1]] = index + 1;
+		j = next[j][a[index + 1]];
+	}
+
+	for(index = 0; index < M; index ++)
+	{
+		E[index + 1] = (((E[index] - 1LL) * (long long )N) % ghaSTLcon + ghaSTLcon) % ghaSTLcon;
+		for(j = 1; j <= N; j ++)
+			if(next[index][j] != index + 1) (((E[index + 1] -= E[next[index][j]]) %= ghaSTLcon) += ghaSTLcon) %= ghaSTLcon;
+	}
+
+	for(index = 1; index <= M; index ++)
+		printf("%lld\n", ((-E[index] % ghaSTLcon) + ghaSTLcon) % ghaSTLcon);
+	return 0;
+}
+```
