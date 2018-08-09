@@ -2749,3 +2749,586 @@ int main(void) //2598.cpp
 	return 0;
 }
 ```
+
+### $\text{#}14$
+
+#### $\text{T}1$
+
+> 给出 $1$ 棵 $n$ 个点的树，树上每 $1$ 个点 $i$ 都有点权 $A_i$。求
+> $$
+> \sum_{i=1}^n\sum_{j=1}^n(\max(i, j) - \min(i, j))\times len(i,j)
+> $$
+> 其中 $\max(i,j)$ 表示从 $i$ 到 $j$ 的路径的点权的最大值，$\min(i, j)$ 则为最小值，$len(i, j)$ 表示该路径的点数。
+
+这题询问树上所有路径，考虑点分治。
+
+将原式拆开，根据乘法分配律得到所求为
+$$
+\sum_{i=1}^n\sum_{j=1}^n\max(i,j)\times len(i,j)-\sum_{i=1}^n\sum_{j=1}^n\min(i,j)\times len(i,j)
+$$
+注意到 $2$ 部分的求解是类似的。我们可以只考虑如何计算 $\max$ 的情况，然后将所有点权值取反，此时所有点权为负数，原来最小的现在变成了最大，恰好可以用相同的方式求解。
+
+---
+
+对于分治重心 $x$，考虑各子树经过 $x$ 到达其他子树的路径对答案的贡献。
+
+由于询问的是无序点对，为了避免重复计算，只考虑“当前子树”与“之前子树”之间的路径。
+
+对于当前子树中的某个点 $p$，在暴力时预处理出 $x$ 到 $p$ 经过的点数 $dist[p]$ 以及 $x$ 到 $p$ 路径上的最大值 $A[p]$。
+
+在与之前子树中的某个结点 $q$ 组成路径时，显然有
+$$
+len(p, q)=dist[p]+dist[q]-1\\
+\max(p,q)=\max\{A[p],A[q]\}
+$$
+正如之前遇到过的绝对值符号 $1$ 样，我们发现取 $\max$ 也是无法直接统计的。
+
+---
+
+考虑分类讨论。
+
+若 $A[q]\le A[p]$，则每个 $q$ 都有对答案的贡献为
+$$
+A[p]\times(dist[p]+dist[q]-1)=A[p]\times(dist[p]-1)+A[p]\times dist[q]
+$$
+所有满足条件的 $q$ 的总贡献即为
+$$
+A[p]\times(dist[p]-1)\times\sum[A[q]\le A[p]]+A[p]\times\sum dist[q][A[q]\le A[p]]
+$$
+类似地，若 $A[p] < A[q]$，则每个 $q$ 都有对答案的贡献为
+$$
+A[q]\times(dist[p]+dist[q]-1)=A[q]\times(dist[p]-1)+A[q]\times dist[q]
+$$
+所有满足条件的 $q$ 的总贡献即为
+$$
+(dist[p]-1)\times\sum A[q][A[p]<A[q]]+\sum A[q]dist[q][A[p]<A[q]]
+$$
+注意到上述 $4$ 个 $\sum$ 都满足关于 $A$ 的前缀和形式，可以简单地使用 $\text{Fenwick Tree}$ 维护。
+
+每 $1$ 层递归时间复杂度 $O(n\log n)$。
+
+由 $\text{Master}$ 定理可知总时间复杂度 $O(n\log n)$。
+
+```cpp
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <algorithm>
+#include <iostream>
+#include <vector>
+#define N 50020
+#define MAXA 10020
+using namespace std;
+
+long long a[N], dist[N];
+int size[N], maxSubtree[N];
+vector<int> edges[N];
+bool visited[N];
+
+class Queue
+{
+public:
+    int value[N];
+    int head, tail;
+    Queue(void) : head(1), tail(0)
+    {
+        memset(value, 0, sizeof value);
+
+        return;
+    }
+
+    bool empty(void)
+    {
+        return tail < head;
+    }
+
+    int front(void)
+    {
+        return value[head];
+    }
+
+    void push(int x)
+    {
+        value[++ tail] = x;
+
+        return;
+    }
+
+    void pop(void)
+    {
+        value[head ++] = 0;
+        if(empty())
+            head = 1, tail = 0;
+
+        return;
+    }
+} queueTemp, queueAll;
+
+long long A[N];
+
+void depthFirstSearch(int x)
+{
+    int i;
+
+    visited[x] = true;
+    size[x] = 1;
+    maxSubtree[x] = -1;
+    queueTemp.push(x);
+    for(i = 0; i < (signed)edges[x].size(); i ++)
+        if(!visited[edges[x].at(i)])
+        {
+            A[edges[x].at(i)] = max(A[x], a[edges[x].at(i)]);
+            dist[edges[x].at(i)] = dist[x] + 1;
+            depthFirstSearch(edges[x].at(i));
+            size[x] += size[edges[x].at(i)];
+            maxSubtree[x] = max(maxSubtree[x], size[edges[x].at(i)]);
+        }
+    visited[x] = false;
+
+    return;
+}
+
+class FenwickTree
+{
+public:
+    long long value[MAXA << 1];
+    FenwickTree(void)
+    {
+        memset(value, 0, sizeof value);
+
+        return;
+    }
+
+    inline int lowBit(int x)
+    {
+        return x & -x;
+    }
+
+    void update(int position, long long delta)
+    {
+        int i;
+
+        for(i = position; i < (MAXA << 1); i += lowBit(i))
+            value[i] += delta;
+
+        return;
+    }
+
+    long long query(int position)
+    {
+        long long result;
+        int i;
+
+        for(result = 0LL, i = position; i; i -= lowBit(i))
+            result += value[i];
+
+        return result;
+    }
+} lessOrEqualCount, dPrefixSum, aPrefixSum, timesPrefixSum;
+
+int offset;
+
+long long solve(int x)
+{
+    int total;
+    long long answer;
+    int i, j, p;
+
+    for(; !queueTemp.empty(); queueTemp.pop())
+        ;
+    depthFirstSearch(x);
+    for(total = size[x]; !queueTemp.empty(); queueTemp.pop())
+    {
+        maxSubtree[queueTemp.front()] = max(maxSubtree[queueTemp.front()], total - size[queueTemp.front()]);
+        if(maxSubtree[queueTemp.front()] < maxSubtree[x])
+            x = queueTemp.front();
+    }
+
+    visited[x] = true;
+    for(; !queueAll.empty(); queueAll.pop())
+        ;
+    lessOrEqualCount.update(a[x] + offset, 1LL);
+    dPrefixSum.update(a[x] + offset, 1LL);
+    aPrefixSum.update(a[x] + offset, a[x]);
+    timesPrefixSum.update(a[x] + offset, a[x]);
+    for(i = answer = 0; i < (signed)edges[x].size(); i ++)
+        if(!visited[edges[x].at(i)])
+        {
+            A[edges[x].at(i)] = max(a[x], a[edges[x].at(i)]);
+            dist[edges[x].at(i)] = 2LL;
+            depthFirstSearch(edges[x].at(i));
+            for(j = queueTemp.head; j <= queueTemp.tail; j ++)
+            {
+                p = queueTemp.value[j];
+                answer += A[p] * (dist[p] - 1LL) * lessOrEqualCount.query(A[p] + offset) + A[p] * dPrefixSum.query(A[p] + offset)
+                       +  (aPrefixSum.query(MAXA - 1 + offset) - aPrefixSum.query(A[p] + offset)) * (dist[p] - 1LL) + (timesPrefixSum.query(MAXA - 1 + offset) - timesPrefixSum.query(A[p] + offset));
+            }
+            for(; !queueTemp.empty(); queueTemp.pop())
+            {
+                p = queueTemp.front();
+                lessOrEqualCount.update(A[p] + offset, 1LL);
+                dPrefixSum.update(A[p] + offset, dist[p]);
+                aPrefixSum.update(A[p] + offset, A[p]);
+                timesPrefixSum.update(A[p] + offset, A[p] * dist[p]);
+                queueAll.push(p);
+            }
+        }
+
+    for(; !queueAll.empty(); queueAll.pop())
+    {
+        p = queueAll.front();
+        lessOrEqualCount.update(A[p] + offset, -1LL);
+        dPrefixSum.update(A[p] + offset, -dist[p]);
+        aPrefixSum.update(A[p] + offset, -A[p]);
+        timesPrefixSum.update(A[p] + offset, -(A[p] * dist[p]));
+    }
+    lessOrEqualCount.update(a[x] + offset, -1LL);
+    dPrefixSum.update(a[x] + offset, -1LL);
+    aPrefixSum.update(a[x] + offset, -a[x]);
+    timesPrefixSum.update(a[x] + offset, -a[x]);
+
+    for(i = 0; i < (signed)edges[x].size(); i ++)
+        if(!visited[edges[x].at(i)])
+            answer += solve(edges[x].at(i));
+
+    return answer;
+}
+
+int main(void) //2565.cpp
+{
+    int n, u, v;
+    long long answer;
+    int i;
+
+    freopen("2565.in" , "r", stdin);
+    freopen("2565.out", "w", stdout);
+
+    scanf("%d", &n);
+    for(i = 0; i < n; i ++)
+        scanf("%lld", &a[i]);
+    for(i = 1; i < n; i ++)
+    {
+        scanf("%d %d", &u, &v);
+        edges[-- u].push_back(-- v);
+        edges[   v].push_back(   u);
+    }
+    offset = 1;
+    answer = solve(0);
+
+    for(i = 0; i < n; i ++)
+        a[i] *= -1LL;
+    memset(visited, false, sizeof visited);
+    offset = 10001;
+    printf("%lld\n", answer + solve(0));
+
+    return 0;
+}
+```
+
+#### $\text{T}2$
+
+> 给出 $1$ 颗 $n$ 个点的树，某些节点间是敌对关系。
+>
+> 如果 $1$ 个点的祖先和另外 $1$ 个点的祖先是独对关系，那么这 $2$ 个点也是敌对关系。
+>
+> 询问 $Q$ 次，每次问 $2$ 个点是不是敌对关系。
+
+根据题意，$1$ 旦与某个点为敌，就会与以该点为根的子树为敌。
+
+$1$ 棵子树在 $\text{DFS}$ 序中总是连续的 $1$ 段，可以考虑用线段树上标记对应段维护每个点的敌对关系。
+
+注意到敌对关系是可以继承的，每个节点的所有敌人都是其祖先的所有敌人与自身敌人的并集。
+
+因此每次只需要在父亲结点的基础上新标记自身独有的敌人即可，这符合可持久化的特征。
+
+在实现上需要注意，进行区间修改不好操作，由于是单点询问，可以转为差分的形式，即在敌对点子树的 $\text{DFS}$ 序左端点 $+1$，右端点后 $1$ 个点 $-1$，询问某个点时只需查询前缀和，若大于 $0$ 则是敌对关系。
+
+时间复杂度 $O(n\log n)$。
+
+```cpp
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <algorithm>
+#include <iostream>
+#include <vector>
+#define N 30020
+#define MAXQ 100020
+using namespace std;
+
+vector<int> edges[N], enemies[N];
+vector<pair<int, int> > queries[N];
+
+bool answer[MAXQ];
+
+int currentEnemies[N];
+
+int clk;
+int l[N], r[N];
+
+void preVisit(int x)
+{
+	int i;
+
+	l[x] = clk ++;
+	for(i = 0; i < (signed)edges[x].size(); i ++)
+		preVisit(edges[x].at(i));
+	r[x] = clk - 1;
+}
+
+class PersistentSegmentTree
+{
+public:
+	class Node
+	{
+	public:
+		Node *child[2];
+		int sum;
+		int left, right, middle;
+		Node(int x = 0, int y = 0) : sum(0), left(x), right(y), middle((x + y) >> 1)
+		{
+			child[0] = child[1] = NULL;
+
+			return;
+		}
+
+		void maintain(void)
+		{
+			sum = child[0]->sum + child[1]->sum;
+
+			return;
+		}
+	} *roots[N];
+	PersistentSegmentTree(void)
+	{
+		memset(roots, 0, sizeof roots);
+
+		return;
+	}
+
+	void build(Node *¤t, int left, int right)
+	{
+		current = new Node(left, right);
+		if(left < right)
+		{
+			build(current->child[0], left               , current->middle);
+			build(current->child[1], current->middle + 1, right          );
+		}
+
+		return;
+	}
+
+	void update(Node *¤t, Node *last, int position, int value)
+	{
+		int direction;
+		current = new Node();
+		*current = *last;
+		if(current->left == current->right)
+		{
+			current->sum += value;
+
+			return;
+		}
+		direction = current->middle < position;
+		update(current->child[direction], last->child[direction], position, value);
+		current->maintain();
+
+		return;
+	}
+
+	int query(Node *current, int left, int right)
+	{
+		if(right < current->left || current->right < left)
+			return 0;
+		if(left <= current->left && current->right <= right)
+			return current->sum;
+		return query(current->child[0], left, right) + query(current->child[1], left, right);
+	}
+} ghaSTLcon;
+
+int n, parent[N];
+
+void depthFirstSearch(int x)
+{
+	int i;
+	bool f__k;
+
+	if(!enemies[x].size())
+	{
+		ghaSTLcon.roots[x] = new PersistentSegmentTree::Node();
+		*ghaSTLcon.roots[x] = *ghaSTLcon.roots[parent[x]];
+	}
+
+	for(i = 0, f__k = true; i < (signed)enemies[x].size(); i ++)
+	{
+		ghaSTLcon.update(ghaSTLcon.roots[x], f__k ? ghaSTLcon.roots[parent[x]] : ghaSTLcon.roots[x], l[enemies[x].at(i)], 1);
+		f__k = false;
+		if(r[enemies[x].at(i)] + 1 < n)
+			ghaSTLcon.update(ghaSTLcon.roots[x], ghaSTLcon.roots[x], r[enemies[x].at(i)] + 1, -1);
+	}
+	for(i = 0; i < (signed)edges[x].size(); i ++)
+		depthFirstSearch(edges[x].at(i));
+
+	return;
+}
+
+int main(void) //2599.cpp
+{
+	int m, x, y, Q;
+	int i;
+
+	freopen("2599.in" , "r", stdin);
+	freopen("2599.out", "w", stdout);
+
+	scanf("%d", &n);
+	for(i = 1; i < n; i ++)
+	{
+		scanf("%d", &parent[i]);
+		edges[-- parent[i]].push_back(i);
+	}
+	scanf("%d", &m);
+	for(i = 0; i < m; i ++)
+	{
+		scanf("%d %d", &x, &y);
+		enemies[-- x].push_back(-- y);
+		enemies[   y].push_back(   x);
+	}
+
+	preVisit(0);
+	ghaSTLcon.build(ghaSTLcon.roots[n], 0, n - 1);
+	parent[0] = n;
+	depthFirstSearch(0);
+
+	scanf("%d", &Q);
+	for(i = 0; i < Q; i ++)
+	{
+		scanf("%d %d", &x, &y);
+		puts(ghaSTLcon.query(ghaSTLcon.roots[-- x], 0, l[-- y]) > 0 ? "Yes" : "No");
+	}
+
+	return 0;
+}
+```
+
+#### $\text{T}3$
+
+> 有 $1$ 个 $n\times m$ 的平面，第 $i$ 排的第 $L_i$ 到 $R_i$ 列中每 $1$ 格的数都是 $A_i$，其余格子为 $0$。
+>
+> 有 $Q$ 次询问，问 $1$ 个矩形的总和。
+>
+> 强制在线。
+
+很容易想到 $2$ 维前缀和的形式，但是会发现数据范围过大而无法直接实现。
+
+但是这启示我们，部分和可以差分，考虑使用线段树维护每列的前缀和。
+
+注意到我们在直接维护前缀和的过程中，实际上每行只有 $L_i$ 到 $R_i$ 这部分的值会发生改变，其余都与上 $1$ 行完全 $1$ 致。使用标记永久化的方式即可。
+
+```cpp
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <algorithm>
+#include <iostream>
+#define N 100020
+using namespace std;
+
+class PersistentSegmentTree
+{
+public:
+	class Node
+	{
+	public:
+		Node *child[2];
+		long long sum, delta;
+		int left, right, middle;
+		Node(int x = 0, int y = 0) : sum(0LL), delta(0LL), left(x), right(y), middle((x + y) >> 1)
+		{
+			child[0] = child[1] = NULL;
+
+			return;
+		}
+	} *roots[N];
+	PersistentSegmentTree(void)
+	{
+		memset(roots, 0, sizeof roots);
+
+		return;
+	}
+
+	void build(Node *¤t, int left, int right)
+	{
+		current = new Node(left, right);
+		if(left < right)
+		{
+			build(current->child[0], left               , current->middle);
+			build(current->child[1], current->middle + 1, right          );
+		}
+
+		return;
+	}
+
+	void update(Node *¤t, Node *last, int left, int right, long long delta)
+	{
+		if(right < last->left || last->right < left)
+			return;
+		current = new Node();
+		*current = *last;
+		current->sum += delta * (long long)(min(current->right, right) - max(current->left, left) + 1);
+		if(left <= current->left && current->right <= right)
+		{
+			current->delta += delta;
+
+			return;
+		}
+		update(current->child[0], last->child[0], left, right, delta);
+		update(current->child[1], last->child[1], left, right, delta);
+
+		return;
+	}
+
+	long long query(Node *current, long long deltaSum, int left, int right)
+	{
+		if(right < current->left || current->right < left)
+			return 0LL;
+		if(left <= current->left && current->right <= right)
+			return current->sum + deltaSum * (long long)(current->right - current->left + 1);
+		return query(current->child[0], deltaSum + current->delta, left, right) + query(current->child[1], deltaSum + current->delta, left, right);
+	}
+} ghaSTLcon;
+
+int L[N], R[N];
+long long A[N];
+
+int main(void) //2600.cpp
+{
+	int n, m;
+	int Q;
+	long long a, b, c, d, ans;
+	int i;
+
+	freopen("2600.in" , "r", stdin);
+	freopen("2600.out", "w", stdout);
+
+	scanf("%d %d", &n, &m);
+	ghaSTLcon.build(ghaSTLcon.roots[0], 1, m);
+	for(i = 1; i <= n; i ++)
+	{
+		scanf("%d %d %lld", &L[i], &R[i], &A[i]);
+		ghaSTLcon.update(ghaSTLcon.roots[i], ghaSTLcon.roots[i - 1], L[i], R[i], A[i]);
+	}
+	scanf("%d", &Q);
+	for(ans = 0LL, i = 0; i < Q; i ++)
+	{
+		scanf("%lld %lld %lld %lld", &a, &b, &c, &d);
+		a ^= ans;
+		b ^= ans;
+		c ^= ans;
+		d ^= ans;
+		ans = ghaSTLcon.query(ghaSTLcon.roots[c], 0, b, d) - ghaSTLcon.query(ghaSTLcon.roots[a - 1], 0, b, d);
+		printf("%lld\n", ans);
+	}
+
+	return 0;
+}
+```
