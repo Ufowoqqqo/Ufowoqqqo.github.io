@@ -68,25 +68,5 @@ friends: [
     {
         title: "羊毛羊",
         href: "http://www.cnblogs.com/y-m-y"
-    },
-    {
-        title: "Ghastlcon",
-        href: "https://Ghastlcon.github.io"
-    },
-    {
-        title: "Monad",
-        href: "https://YanWQ-Monad.github.io"
-    },
-    {
-        title: "wyy",
-        href: "http://www.cnblogs.com/littlewyy"
-    },
-    {
-        title: "zqy",
-        href: "http://www.cnblogs.com/yiyiyizqy"
-    },
-    {
-        title: "aspe",
-        href: "http://yhf4aspe.blog.163.com"
     }
 ]
